@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE project>
+<project name="poesys-bs" default="jar">
+
+	<property file="build.properties" />
+
+	<property name="src" value="src" />
+	<property name="lib" value="lib" />
+	<property name="dist" value="dist" />
+	<property name="build" value="bin" />
+	<property name="dist-file" value="poesys-bs" />
+
+	<!-- The classpath for Java compilation -->
+	<path id="project.classpath">
+		<fileset dir="${lib}">
+			<include name="*.jar" />
+		</fileset>
+		<path path="${build}" />
+	</path>
+	
+	<!-- ================================= 
+          target: compile Compiles the Java classes               
+         ================================= -->
+	<target name="compile" description="Compiles the Java classes">
+		<mkdir dir="${build}"/>
+		<javac source="1.7" target="1.7" destdir="${build}" deprecation="false" nowarn="on" debug="on" memoryMaximumSize="512m" fork="true" includeantruntime="false">
+			<classpath refid="project.classpath" />
+			<src path="${src}" />
+			<include name="**/*.java" />
+		</javac>
+	</target>
+
+	<!-- ================================= 
+          target: jar Builds the distribution jar file with the non-test classes and without the properties files             
+         ================================= -->
+	<target name="jar" depends="compile">
+		<jar destfile="${dist}/${dist-file}.jar">
+			<fileset dir="${build}" includes="**/*.class" excludes="**/*Test*.class, **/*Fake*.class" />
+			<fileset dir="${build}" includes="**/*.properties" excludes="**/*database*, **/*memcached*" />
+			<manifest />
+		</jar>
+	</target>
+
+	<!-- ================================= 
+          target: clean Remove compiled classes and jar file
+         ================================= -->
+	<target name="clean" description="Removes compiled classes and jar file">
+		<delete dir="${build}" />
+		<delete file="${dist}/${dist-file}.jar" />
+	</target>
+
+</project>
