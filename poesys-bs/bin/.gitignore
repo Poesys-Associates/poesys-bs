@@ -1,3 +1,2 @@
-/com/
-*.class
-*.properties
+META-INF/
+com/
