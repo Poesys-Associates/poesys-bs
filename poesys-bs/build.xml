@@ -23,6 +23,12 @@
          ================================= -->
 	<target name="compile" description="Compiles the Java classes">
 		<mkdir dir="${build}"/>
+        <!-- Copy the properties file. -->
+        <copy todir="${build}/com/poesys/bs">
+            <fileset dir="${src}/com/poesys/bs/">
+                <include name="*.properties" />
+            </fileset>
+        </copy>
 		<javac source="1.7" target="1.7" destdir="${build}" deprecation="false" nowarn="on" debug="on" memoryMaximumSize="512m" fork="true" includeantruntime="false">
 			<classpath refid="project.classpath" />
 			<src path="${src}" />
