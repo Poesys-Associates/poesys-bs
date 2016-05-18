@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * A utility command class that generically builds a list of data-access-layer
  * DTOs of type T from a list of business-layer DTOs of type B that encapsulate
- * DTOs of type T (AbstractDto<T>).
+ * DTOs of type T (AbstractDto&lt;T&gt;).
  * 
  * @author Robert J. Muller
  * @param <T> the data-access layer DTO type

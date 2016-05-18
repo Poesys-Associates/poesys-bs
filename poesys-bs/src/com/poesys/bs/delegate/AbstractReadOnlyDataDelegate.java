@@ -18,7 +18,6 @@
 package com.poesys.bs.delegate;
 
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -89,8 +88,7 @@ import com.poesys.db.pk.IPrimaryKey;
  * @param <K> the primary key type
  */
 abstract public class AbstractReadOnlyDataDelegate<T extends IDto<S>, S extends IDbDto, K extends IPrimaryKey>
-    extends AbstractDaoDelegate<S> implements
-    IReadOnlyDataDelegate<T, S, K> {
+    extends AbstractDaoDelegate<S> implements IReadOnlyDataDelegate<T, S, K> {
 
   /**
    * Standard constructor that sets the name of the subsystem and the database
@@ -119,18 +117,14 @@ abstract public class AbstractReadOnlyDataDelegate<T extends IDto<S>, S extends 
     super(subsystem, expiration);
   }
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see com.poesys.bs.delegate.IDataDelegate#getObject(K)
-   */
+  @Override
   public T getObject(K key) throws DelegateException {
-    Connection c = getConnection();
     T object = null;
 
     try {
-      IQueryByKey<S> query = factory.getQueryByKey(getQueryByKeySql());
-      S queriedDto = query.queryByKey(c, key);
+      IQueryByKey<S> query =
+        factory.getQueryByKey(getQueryByKeySql(), subsystem);
+      S queriedDto = query.queryByKey(key);
       if (queriedDto != null) {
         object = wrapData(queriedDto);
       }
@@ -142,20 +136,18 @@ abstract public class AbstractReadOnlyDataDelegate<T extends IDto<S>, S extends 
       throw new DelegateException(e.getMessage(), e);
     } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
-    } finally {
-      close(c);
     }
     return object;
   }
 
   @Override
   public T getDatabaseObject(K key) throws DelegateException {
-    Connection c = getConnection();
     T object = null;
 
     try {
-      IQueryByKey<S> query = factory.getDatabaseQueryByKey(getQueryByKeySql());
-      S queriedDto = query.queryByKey(c, key);
+      IQueryByKey<S> query =
+        factory.getDatabaseQueryByKey(getQueryByKeySql(), subsystem);
+      S queriedDto = query.queryByKey(key);
       if (queriedDto != null) {
         object = wrapData(queriedDto);
       }
@@ -165,21 +157,19 @@ abstract public class AbstractReadOnlyDataDelegate<T extends IDto<S>, S extends 
       throw new DelegateException(e.getMessage(), e);
     } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
-    } finally {
-      close(c);
     }
     return object;
   }
 
   @Override
   public T getDatabaseObject(K key, int expiration) throws DelegateException {
-    Connection c = getConnection();
     T object = null;
 
     try {
-      IQueryByKey<S> query = factory.getDatabaseQueryByKey(getQueryByKeySql());
+      IQueryByKey<S> query =
+        factory.getDatabaseQueryByKey(getQueryByKeySql(), subsystem);
       query.setExpiration(expiration);
-      S queriedDto = query.queryByKey(c, key);
+      S queriedDto = query.queryByKey(key);
       if (queriedDto != null) {
         object = wrapData(queriedDto);
       }
@@ -189,8 +179,6 @@ abstract public class AbstractReadOnlyDataDelegate<T extends IDto<S>, S extends 
       throw new DelegateException(e.getMessage(), e);
     } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
-    } finally {
-      close(c);
     }
     return object;
   }
@@ -234,17 +222,13 @@ abstract public class AbstractReadOnlyDataDelegate<T extends IDto<S>, S extends 
    */
   abstract protected T wrapData(S dto);
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see com.poesys.bs.delegate.IDataDelegate#getAllObjects(int)
-   */
+  @Override
   public List<T> getAllObjects(int rows) throws DelegateException {
-    Connection c = getConnection();
     List<T> list = new ArrayList<T>();
     try {
-      IQueryList<S> query = factory.getQueryList(getQueryListSql(), rows);
-      List<S> objects = query.query(c);
+      IQueryList<S> query =
+        factory.getQueryList(getQueryListSql(), subsystem, rows);
+      List<S> objects = query.query();
       for (S object : objects) {
         // Unchecked conversion of IDto to type S here
         T dto = wrapData((S)object);
@@ -256,8 +240,6 @@ abstract public class AbstractReadOnlyDataDelegate<T extends IDto<S>, S extends 
       throw new DelegateException(e.getMessage(), e);
     } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
-    }  finally {
-      close(c);
     }
 
     return list;
@@ -268,12 +250,10 @@ abstract public class AbstractReadOnlyDataDelegate<T extends IDto<S>, S extends 
    * SQL statement object for multiple-object queries.
    * 
    * <pre>
-   * <code>
    * &#064;Override
    * protected IQuerySql getQueryListSql() {
    *   return new TestNaturalAllQuerySql();
    * }
-   * <code>
    * </pre>
    * 
    * @return the SELECT SQL statement object

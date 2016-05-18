@@ -151,12 +151,12 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
   @Override
   public T getObject(K key) throws DelegateException {
-    Connection c = getConnection();
     T object = null;
 
     try {
-      IQueryByKey<S> query = factory.getQueryByKey(getQueryByKeySql());
-      S queriedDto = query.queryByKey(c, key);
+      IQueryByKey<S> query =
+        factory.getQueryByKey(getQueryByKeySql(), subsystem);
+      S queriedDto = query.queryByKey(key);
       if (queriedDto != null) {
         object = wrapData(queriedDto);
       }
@@ -166,21 +166,19 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       throw new DelegateException(e.getMessage(), e);
     } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
-    } finally {
-      close(c);
     }
     return object;
   }
 
   @Override
   public T getObject(K key, int expiration) throws DelegateException {
-    Connection c = getConnection();
     T object = null;
 
     try {
-      IQueryByKey<S> query = factory.getQueryByKey(getQueryByKeySql());
+      IQueryByKey<S> query =
+        factory.getQueryByKey(getQueryByKeySql(), subsystem);
       query.setExpiration(expiration);
-      S queriedDto = query.queryByKey(c, key);
+      S queriedDto = query.queryByKey(key);
       if (queriedDto != null) {
         object = wrapData(queriedDto);
       }
@@ -190,20 +188,18 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       throw new DelegateException(e.getMessage(), e);
     } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
-    } finally {
-      close(c);
     }
     return object;
   }
 
   @Override
   public T getDatabaseObject(K key) throws DelegateException {
-    Connection c = getConnection();
     T object = null;
 
     try {
-      IQueryByKey<S> query = factory.getDatabaseQueryByKey(getQueryByKeySql());
-      S queriedDto = query.queryByKey(c, key);
+      IQueryByKey<S> query =
+        factory.getDatabaseQueryByKey(getQueryByKeySql(), subsystem);
+      S queriedDto = query.queryByKey(key);
       if (queriedDto != null) {
         object = wrapData(queriedDto);
       }
@@ -213,21 +209,20 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       throw new DelegateException(e.getMessage(), e);
     } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
-    } finally {
-      close(c);
     }
+
     return object;
   }
 
   @Override
   public T getDatabaseObject(K key, int expiration) throws DelegateException {
-    Connection c = getConnection();
     T object = null;
 
     try {
-      IQueryByKey<S> query = factory.getDatabaseQueryByKey(getQueryByKeySql());
+      IQueryByKey<S> query =
+        factory.getDatabaseQueryByKey(getQueryByKeySql(), subsystem);
       query.setExpiration(expiration);
-      S queriedDto = query.queryByKey(c, key);
+      S queriedDto = query.queryByKey(key);
       if (queriedDto != null) {
         object = wrapData(queriedDto);
       }
@@ -237,9 +232,8 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       throw new DelegateException(e.getMessage(), e);
     } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
-    } finally {
-      close(c);
     }
+
     return object;
   }
 
@@ -282,18 +276,14 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
    */
   abstract protected T wrapData(S dto);
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see com.poesys.bs.delegate.IDataDelegate#getAllObjects(int)
-   */
+  @Override
   public List<T> getAllObjects(int rows) throws DelegateException {
-    Connection c = getConnection();
     List<T> list = new ArrayList<T>();
 
     try {
-      IQueryList<S> query = factory.getQueryList(getQueryListSql(), rows);
-      List<S> objects = query.query(c);
+      IQueryList<S> query =
+        factory.getQueryList(getQueryListSql(), subsystem, rows);
+      List<S> objects = query.query();
       for (S object : objects) {
         // Unchecked conversion of IDto to type S here
         T dto = wrapData((S)object);
@@ -305,8 +295,6 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       throw new DelegateException(e.getMessage(), e);
     } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
-    } finally {
-      close(c);
     }
 
     return list;
@@ -315,13 +303,13 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
   @Override
   public List<T> getAllObjects(int rows, int expiration)
       throws DelegateException {
-    Connection c = getConnection();
     List<T> list = new ArrayList<T>();
 
     try {
-      IQueryList<S> query = factory.getQueryList(getQueryListSql(), rows);
+      IQueryList<S> query =
+        factory.getQueryList(getQueryListSql(), subsystem, rows);
       query.setExpiration(expiration);
-      List<S> objects = query.query(c);
+      List<S> objects = query.query();
       for (S object : objects) {
         // Unchecked conversion of IDto to type S here
         T dto = wrapData((S)object);
@@ -333,8 +321,6 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       throw new DelegateException(e.getMessage(), e);
     } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
-    } finally {
-      close(c);
     }
 
     return list;
@@ -345,46 +331,40 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
    * SQL statement object for multiple-object queries.
    * 
    * <pre>
-   * <code>
    * &#064;Override
    * protected IQuerySql getQueryListSql() {
    *   return new TestNaturalAllQuerySql();
    * }
-   * <code>
    * </pre>
    * 
    * @return the SELECT SQL statement object
    */
   abstract protected IQuerySql<S> getQueryListSql();
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see com.poesys.bs.delegate.IDataDelegate#insert(java.util.List)
-   */
+  @Override
   public void insert(List<T> list) throws DelegateException {
-    Connection c = getConnection();
+    Connection connection = getConnection();
     IInsertBatch<S> inserter = factory.getInsertBatch(getInsertSql());
 
     Collection<S> dtos = convertDtoList(list);
 
     try {
-      inserter.insert(c, dtos, dtos.size() / 2);
+      inserter.insert(connection, dtos, dtos.size() / 2);
       // INSERT done, update status to EXISTING
       for (IDbDto dto : dtos) {
         dto.setExisting();
       }
     } catch (ConstraintViolationException e) {
-      rollBack(c, e.getMessage(), e);
+      rollBack(connection, e.getMessage(), e);
     } catch (SQLException e) {
-      rollBack(c, e.getMessage(), e);
+      rollBack(connection, e.getMessage(), e);
     } catch (BatchException e) {
       // Don't roll back the whole transaction; the DBMS rolls back the
       // individual inserts that failed, but the rest should be committed.
       throw new DelegateException(e.getMessage(), e);
     } finally {
-      commit(c);
-      close(c);
+      commit(connection);
+      close(connection);
       finalizeStatus(dtos, Status.EXISTING);
     }
   }
@@ -406,13 +386,9 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
    */
   abstract protected IInsertSql<S> getInsertSql();
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see com.poesys.bs.delegate.IDataDelegate#update(T)
-   */
+  @Override
   public void update(T object) throws DelegateException {
-    Connection c = getConnection();
+    Connection connection = getConnection();
 
     // Create the DAO for updating S objects.
     IUpdate<S> updater = factory.getUpdate(getUpdateSql());
@@ -420,19 +396,19 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
     // Update the object using the DAO if the object is updatable.
     if (updater != null) {
       try {
-        updater.update(c, object.toDto());
+        updater.update(connection, object.toDto());
       } catch (ConstraintViolationException e) {
-        rollBack(c, e.getMessage(), e);
+        rollBack(connection, e.getMessage(), e);
       } catch (SQLException e) {
-        rollBack(c, e.getMessage(), e);
+        rollBack(connection, e.getMessage(), e);
       } catch (BatchException e) {
         // A batch error happened on some nested object list; don't roll back
         // the whole transaction, just let the DBMS roll back the operation that
         // failed.
         throw new DelegateException(e.getMessage(), e);
       } finally {
-        commit(c);
-        close(c);
+        commit(connection);
+        close(connection);
       }
     }
   }
@@ -454,13 +430,9 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
    */
   abstract protected IUpdateSql<S> getUpdateSql();
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see com.poesys.bs.delegate.IDataDelegate#updateBatch(java.util.List)
-   */
+  @Override
   public void updateBatch(List<T> list) throws DelegateException {
-    Connection c = getConnection();
+    Connection connection = getConnection();
     IUpdateBatch<S> updater = factory.getUpdateBatch(getUpdateSql());
 
     // Update if the object is updatable.
@@ -468,52 +440,47 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       Collection<S> dtos = convertDtoList(list);
 
       try {
-        updater.update(c, dtos, dtos.size() / 2);
+        updater.update(connection, dtos, dtos.size() / 2);
       } catch (ConstraintViolationException e) {
-        rollBack(c, e.getMessage(), e);
+        rollBack(connection, e.getMessage(), e);
       } catch (SQLException e) {
-        rollBack(c, e.getMessage(), e);
+        rollBack(connection, e.getMessage(), e);
       } catch (BatchException e) {
         // Don't roll back the whole transaction; the DBMS rolls back the
         // individual inserts that failed, but the rest should be committed.
         throw new DelegateException(e.getMessage(), e);
       } finally {
-        commit(c);
-        close(c);
+        commit(connection);
+        close(connection);
       }
     }
   }
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see com.poesys.bs.delegate.IDataDelegate#delete(T)
-   */
   public void delete(T object) throws DelegateException {
     if (object == null) {
       throw new DelegateException(NO_OBJECT_MSG);
     }
 
-    Connection c = getConnection();
+    Connection connection = getConnection();
     IDelete<S> deleter = factory.getDelete(getDeleteSql());
 
     try {
       // Set the object's status to delete.
       object.delete();
       // Delete the object with the DAO; object must implement IDbDto interface.
-      deleter.delete(c, object.toDto());
+      deleter.delete(connection, object.toDto());
     } catch (ConstraintViolationException e) {
-      rollBack(c, e.getMessage(), e);
+      rollBack(connection, e.getMessage(), e);
     } catch (SQLException e) {
-      rollBack(c, e.getMessage(), e);
+      rollBack(connection, e.getMessage(), e);
     } catch (BatchException e) {
       // A batch error happened on some nested object list; don't roll back
       // the whole transaction, just let the DBMS roll back the operation that
       // failed.
       throw new DelegateException(e.getMessage(), e);
     } finally {
-      commit(c);
-      close(c);
+      commit(connection);
+      close(connection);
     }
   }
 
@@ -534,39 +501,31 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
    */
   abstract protected IDeleteSql<S> getDeleteSql();
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see com.poesys.bs.delegate.IDataDelegate#deleteBatch(java.util.List)
-   */
+  @Override
   public void deleteBatch(List<T> list) throws DelegateException {
-    Connection c = getConnection();
+    Connection connection = getConnection();
     IDeleteBatch<S> deleter = factory.getDeleteBatch(getDeleteSql());
     Collection<S> dtos = convertDtoList(list);
 
     try {
-      deleter.delete(c, dtos, dtos.size() / 2);
+      deleter.delete(connection, dtos, dtos.size() / 2);
     } catch (ConstraintViolationException e) {
-      rollBack(c, e.getMessage(), e);
+      rollBack(connection, e.getMessage(), e);
     } catch (SQLException e) {
-      rollBack(c, e.getMessage(), e);
+      rollBack(connection, e.getMessage(), e);
     } catch (BatchException e) {
       // Don't roll back the whole transaction; the DBMS rolls back the
       // individual inserts that failed, but the rest should be committed.
       throw new DelegateException(e.getMessage(), e);
     } finally {
-      commit(c);
-      close(c);
+      commit(connection);
+      close(connection);
     }
   }
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see com.poesys.bs.delegate.IDataDelegate#process(java.util.List)
-   */
+  @Override
   public void process(List<T> list) throws DelegateException {
-    Connection c = getConnection();
+    Connection connection = getConnection();
 
     // Create the 3 DAOs for inserting, updating, and deleting.
     IInsertBatch<S> inserter = factory.getInsertBatch(getInsertSql());
@@ -579,10 +538,10 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
     // objects that have the appropriate status for the operation.
     try {
       if (deleter != null) {
-        deleter.delete(c, dtos, dtos.size() / 2);
+        deleter.delete(connection, dtos, dtos.size() / 2);
       }
       // Inserter always exists.
-      inserter.insert(c, dtos, dtos.size() / 2);
+      inserter.insert(connection, dtos, dtos.size() / 2);
       // INSERT done, set NEW to EXISTING
       for (IDbDto dto : dtos) {
         if (dto.getStatus().equals(Status.NEW)) {
@@ -590,19 +549,19 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
         }
       }
       if (updater != null) {
-        updater.update(c, dtos, dtos.size() / 2);
+        updater.update(connection, dtos, dtos.size() / 2);
       }
     } catch (ConstraintViolationException e) {
-      rollBack(c, e.getMessage(), e);
+      rollBack(connection, e.getMessage(), e);
     } catch (SQLException e) {
-      rollBack(c, e.getMessage(), e);
+      rollBack(connection, e.getMessage(), e);
     } catch (BatchException e) {
       // Don't roll back the whole transaction; the DBMS rolls back the
       // individual operations that failed, but the rest should be committed.
       throw new DelegateException(e.getMessage(), e);
     } finally {
-      commit(c);
-      close(c);
+      commit(connection);
+      close(connection);
       // Finalize inserts and deletes.
       // TODO following line should be CHANGED I think, status not reset above
       finalizeStatus(dtos, Status.EXISTING);
@@ -673,11 +632,12 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       }
     }
   }
-  
+
   /**
    * Set all CHANGED DTOs in a collection to EXISTING status. You should call
    * this method after updating a collection of DTOs.
    * 
+   * @param <R> the IDbDto type of the collection to update
    * @param dtos a collection of DTO objects
    */
   protected <R extends IDbDto> void updateChangedToExisting(Collection<R> dtos) {
@@ -688,18 +648,14 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
     }
   }
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see com.poesys.bs.delegate.IDataDelegate#truncateTable(java.lang.String)
-   */
+  @Override
   public void truncateTable(String tableName) throws DelegateException {
-    Connection c = getConnection();
+    Connection connection = getConnection();
     ISql sql = new TruncateTableSql(tableName);
     IExecuteSql executive = new ExecuteSql(sql);
 
     try {
-      executive.execute(c);
+      executive.execute(connection);
     } catch (SQLException e) {
       throw new DelegateException(e.getMessage(), e);
     }

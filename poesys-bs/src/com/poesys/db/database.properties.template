@@ -1,0 +1,12 @@
+com.poesys.db.default.subsystem=com.poesys.db.poesystest.mysql
+
+com.poesys.db.poesystest.mysql.name=java:jdbc/local/test
+
+com.poesys.db.poesystest.mysql.user=USER
+com.poesys.db.poesystest.mysql.host=HOST
+com.poesys.db.poesystest.mysql.port=PORT
+com.poesys.db.poesystest.mysql.database=DB
+com.poesys.db.poesystest.mysql.dbms=MYSQL
+com.poesys.db.poesystest.mysql.password=PW
+com.poesys.db.poesystest.mysql.pooled=false
+com.poesys.db.poesystest.mysql.max_pool_size=1000
