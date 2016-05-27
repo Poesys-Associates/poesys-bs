@@ -141,6 +141,7 @@ abstract public class AbstractConnectionDelegate {
 
   /**
    * Get the connection factory for the delegate to use.
+   * 
    * @return the factory
    */
   private IConnectionFactory createFactory() {
@@ -183,7 +184,6 @@ abstract public class AbstractConnectionDelegate {
    */
   public void flush() throws ConnectionException {
     factory.flush();
-    clearTemporaryCaches();
   }
 
   /**
@@ -194,16 +194,6 @@ abstract public class AbstractConnectionDelegate {
   public void flush(IDbDto dto) {
     IDaoManager manager = DaoManagerFactory.getManager(subsystem);
     manager.removeObjectFromCache(dto.getClass().getName(), dto.getPrimaryKey());
-  }
-
-  /**
-   * Clear any temporary caches from memory.
-   */
-  private void clearTemporaryCaches() {
-    IDaoManager manager = DaoManagerFactory.getManager(subsystem);
-    if (manager != null) {
-      manager.clearTemporaryCaches();
-    }
   }
 
   /**
@@ -286,8 +276,6 @@ abstract public class AbstractConnectionDelegate {
         throw new DelegateException(CLOSE_CONNECTION, e);
       }
     }
-    // Also remove any temporary caches.
-    clearTemporaryCaches();
   }
 
   /**
