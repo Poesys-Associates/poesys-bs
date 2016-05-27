@@ -563,7 +563,6 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       commit(connection);
       close(connection);
       // Finalize inserts and deletes.
-      // TODO following line should be CHANGED I think, status not reset above
       finalizeStatus(dtos, Status.EXISTING);
       finalizeStatus(dtos, Status.DELETED);
     }
