@@ -31,6 +31,8 @@ import com.poesys.db.BatchException;
 import com.poesys.db.ConstraintViolationException;
 import com.poesys.db.NoPrimaryKeyException;
 import com.poesys.db.connection.IConnectionFactory;
+import com.poesys.db.dao.CacheDaoManager;
+import com.poesys.db.dao.IDaoManager;
 import com.poesys.db.dao.ddl.ExecuteSql;
 import com.poesys.db.dao.ddl.IExecuteSql;
 import com.poesys.db.dao.ddl.ISql;
@@ -149,25 +151,20 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
    */
   abstract protected String getClassName();
 
+  /**
+   * Clear the processed flags in the in-memory Java caches of IDbDto objects.
+   */
+  protected void clearProcessedFlags() {
+    IDaoManager inMemoryCacheManager = CacheDaoManager.getInstance();
+    if (inMemoryCacheManager != null) {
+      inMemoryCacheManager.clearAllProcessedFlags();
+    }
+  }
+
   @Override
   public T getObject(K key) throws DelegateException {
-    T object = null;
-
-    try {
-      IQueryByKey<S> query =
-        factory.getQueryByKey(getQueryByKeySql(), subsystem);
-      S queriedDto = query.queryByKey(key);
-      if (queriedDto != null) {
-        object = wrapData(queriedDto);
-      }
-    } catch (SQLException e) {
-      throw new DelegateException(e.getMessage(), e);
-    } catch (NoPrimaryKeyException e) {
-      throw new DelegateException(e.getMessage(), e);
-    } catch (BatchException e) {
-      throw new DelegateException(e.getMessage(), e);
-    }
-    return object;
+    // pass to expiration-based method with no expiration
+    return getObject(key, -1);
   }
 
   @Override
@@ -177,7 +174,9 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
     try {
       IQueryByKey<S> query =
         factory.getQueryByKey(getQueryByKeySql(), subsystem);
-      query.setExpiration(expiration);
+      if (expiration != -1) {
+        query.setExpiration(expiration);
+      }
       S queriedDto = query.queryByKey(key);
       if (queriedDto != null) {
         object = wrapData(queriedDto);
@@ -188,30 +187,23 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       throw new DelegateException(e.getMessage(), e);
     } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
+    } finally {
+      /*
+       * TODO: VND-164, this clears the processed flags in all the DTOs in the
+       * internal cache so that the next query will not get processing stopped
+       * by the set flag from the previous query. It is possible this won't work
+       * with a full system of threaded queries even though the cache is a
+       * ConcurrentHashMap. I think it is a better solution than clearing the
+       * temp cache, though.
+       */
+      clearProcessedFlags();
     }
     return object;
   }
 
   @Override
   public T getDatabaseObject(K key) throws DelegateException {
-    T object = null;
-
-    try {
-      IQueryByKey<S> query =
-        factory.getDatabaseQueryByKey(getQueryByKeySql(), subsystem);
-      S queriedDto = query.queryByKey(key);
-      if (queriedDto != null) {
-        object = wrapData(queriedDto);
-      }
-    } catch (SQLException e) {
-      throw new DelegateException(e.getMessage(), e);
-    } catch (NoPrimaryKeyException e) {
-      throw new DelegateException(e.getMessage(), e);
-    } catch (BatchException e) {
-      throw new DelegateException(e.getMessage(), e);
-    }
-
-    return object;
+    return getDatabaseObject(key, -1);
   }
 
   @Override
@@ -221,7 +213,9 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
     try {
       IQueryByKey<S> query =
         factory.getDatabaseQueryByKey(getQueryByKeySql(), subsystem);
+      if (expiration != -1) {
       query.setExpiration(expiration);
+      }
       S queriedDto = query.queryByKey(key);
       if (queriedDto != null) {
         object = wrapData(queriedDto);
@@ -232,6 +226,16 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       throw new DelegateException(e.getMessage(), e);
     } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
+    } finally {
+      /*
+       * TODO: VND-164, this clears the processed flags in all the DTOs in the
+       * internal cache so that the next query will not get processing stopped
+       * by the set flag from the previous query. It is possible this won't work
+       * with a full system of threaded queries even though the cache is a
+       * ConcurrentHashMap. I think it is a better solution than clearing the
+       * temp cache, though.
+       */
+      clearProcessedFlags();
     }
 
     return object;
@@ -278,26 +282,7 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
   @Override
   public List<T> getAllObjects(int rows) throws DelegateException {
-    List<T> list = new ArrayList<T>();
-
-    try {
-      IQueryList<S> query =
-        factory.getQueryList(getQueryListSql(), subsystem, rows);
-      List<S> objects = query.query();
-      for (S object : objects) {
-        // Unchecked conversion of IDto to type S here
-        T dto = wrapData((S)object);
-        list.add(dto);
-      }
-    } catch (ConstraintViolationException e) {
-      throw new DelegateException(e.getMessage(), e);
-    } catch (SQLException e) {
-      throw new DelegateException(e.getMessage(), e);
-    } catch (BatchException e) {
-      throw new DelegateException(e.getMessage(), e);
-    }
-
-    return list;
+    return getAllObjects(rows, -1);
   }
 
   @Override
@@ -308,7 +293,9 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
     try {
       IQueryList<S> query =
         factory.getQueryList(getQueryListSql(), subsystem, rows);
+      if (expiration != -1) {
       query.setExpiration(expiration);
+      }
       List<S> objects = query.query();
       for (S object : objects) {
         // Unchecked conversion of IDto to type S here
@@ -321,6 +308,16 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       throw new DelegateException(e.getMessage(), e);
     } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
+    } finally {
+      /*
+       * TODO: VND-164, this clears the processed flags in all the DTOs in the
+       * internal cache so that the next query will not get processing stopped
+       * by the set flag from the previous query. It is possible this won't work
+       * with a full system of threaded queries even though the cache is a
+       * ConcurrentHashMap. I think it is a better solution than clearing the
+       * temp cache, though.
+       */
+      clearProcessedFlags();
     }
 
     return list;
