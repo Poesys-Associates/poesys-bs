@@ -340,12 +340,13 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
   @Override
   public void insert(List<T> list) throws DelegateException {
-    Connection connection = getConnection();
+    Connection connection = null;
     IInsertBatch<S> inserter = factory.getInsertBatch(getInsertSql());
 
     Collection<S> dtos = convertDtoList(list);
 
     try {
+      connection = getConnection();
       inserter.insert(connection, dtos, dtos.size() / 2);
       // INSERT done, update status to EXISTING
       for (IDbDto dto : dtos) {
@@ -385,7 +386,7 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
   @Override
   public void update(T object) throws DelegateException {
-    Connection connection = getConnection();
+    Connection connection = null;
 
     // Create the DAO for updating S objects.
     IUpdate<S> updater = factory.getUpdate(getUpdateSql());
@@ -393,6 +394,7 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
     // Update the object using the DAO if the object is updatable.
     if (updater != null) {
       try {
+        connection = getConnection();
         updater.update(connection, object.toDto());
       } catch (ConstraintViolationException e) {
         rollBack(connection, e.getMessage(), e);
@@ -429,7 +431,7 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
   @Override
   public void updateBatch(List<T> list) throws DelegateException {
-    Connection connection = getConnection();
+    Connection connection = null;
     IUpdateBatch<S> updater = factory.getUpdateBatch(getUpdateSql());
 
     // Update if the object is updatable.
@@ -437,6 +439,7 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       Collection<S> dtos = convertDtoList(list);
 
       try {
+        connection = getConnection();
         updater.update(connection, dtos, dtos.size() / 2);
       } catch (ConstraintViolationException e) {
         rollBack(connection, e.getMessage(), e);
@@ -458,10 +461,11 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       throw new DelegateException(NO_OBJECT_MSG);
     }
 
-    Connection connection = getConnection();
+    Connection connection = null;
     IDelete<S> deleter = factory.getDelete(getDeleteSql());
 
     try {
+      connection = getConnection();
       // Set the object's status to delete.
       object.delete();
       // Delete the object with the DAO; object must implement IDbDto interface.
@@ -500,11 +504,12 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
   @Override
   public void deleteBatch(List<T> list) throws DelegateException {
-    Connection connection = getConnection();
+    Connection connection = null;
     IDeleteBatch<S> deleter = factory.getDeleteBatch(getDeleteSql());
     Collection<S> dtos = convertDtoList(list);
 
     try {
+      connection = getConnection();
       deleter.delete(connection, dtos, dtos.size() / 2);
     } catch (ConstraintViolationException e) {
       rollBack(connection, e.getMessage(), e);
@@ -522,8 +527,6 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
   @Override
   public void process(List<T> list) throws DelegateException {
-    Connection connection = getConnection();
-
     // Create the 3 DAOs for inserting, updating, and deleting.
     IInsertBatch<S> inserter = factory.getInsertBatch(getInsertSql());
     IUpdateBatch<S> updater = factory.getUpdateBatch(getUpdateSql());
@@ -533,7 +536,10 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
     // Delete, insert, and update the objects. Each DAO will process only those
     // objects that have the appropriate status for the operation.
+    Connection connection = null;
     try {
+      connection = getConnection();
+      
       if (deleter != null) {
         deleter.delete(connection, dtos, dtos.size() / 2);
       }
@@ -646,11 +652,12 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
   @Override
   public void truncateTable(String tableName) throws DelegateException {
-    Connection connection = getConnection();
+    Connection connection = null;
     ISql sql = new TruncateTableSql(tableName);
     IExecuteSql executive = new ExecuteSql(sql);
 
     try {
+      connection = getConnection();
       executive.execute(connection);
     } catch (SQLException e) {
       throw new DelegateException(e.getMessage(), e);
