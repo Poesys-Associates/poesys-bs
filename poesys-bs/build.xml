@@ -23,7 +23,7 @@
          ================================= -->
 	<target name="compile" description="Compiles the Java classes">
 		<mkdir dir="${build}" />
-		<javac source="1.7" target="1.7" destdir="${build}" deprecation="false" nowarn="on" debug="on" memoryMaximumSize="512m" fork="true" includeantruntime="false">
+		<javac source="1.8" target="1.8" destdir="${build}" deprecation="false" nowarn="on" debug="on" memoryMaximumSize="512m" fork="true" includeantruntime="false">
 			<classpath refid="project.classpath" />
 			<src path="${src}" />
 			<include name="**/*.java" />
