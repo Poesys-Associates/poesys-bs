@@ -1,0 +1,8 @@
+servers=localhost\:11211
+min_clients=5
+max_clients=100
+pool_maintenance_interval=5
+client_timeout=5
+client_retries=5
+add_clients=5
+protocol=text

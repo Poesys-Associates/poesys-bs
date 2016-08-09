@@ -14,7 +14,6 @@
  * 
  * You should have received a copy of the GNU General Public License along with
  * Poesys-BS. If not, see <http://www.gnu.org/licenses/>.
- * 
  */
 package com.poesys.bs.delegate;
 
@@ -25,6 +24,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.log4j.Logger;
 import org.junit.Test;
 
 import com.poesys.bs.delegate.TestNaturalDelegate;
@@ -35,10 +35,13 @@ import com.poesys.db.pk.NaturalPrimaryKey;
 
 
 /**
+ * CUT: AbstractDataDelegate subclassed by TestNaturalDelegate
  * 
  * @author Robert J. Muller
  */
 public class TestNaturalDelegateTest {
+  private static final Logger logger =
+    Logger.getLogger(TestNaturalDelegateTest.class);
 
   private static final TestNaturalDelegate del = new TestNaturalDelegate();
   private static final BigDecimal n1 = new BigDecimal("1.234");
@@ -47,7 +50,7 @@ public class TestNaturalDelegateTest {
   private static final NaturalPrimaryKey key_a_b = createKey("a", "b");
   private static final NaturalPrimaryKey key_b_c = createKey("b", "c");
   private static final NaturalPrimaryKey key_z_z = createKey("z", "z");
-  
+
   /**
    * Create a Natural Primary Key using two input strings. This static method
    * lets you create keys to use in testing, reducing code duplication.
@@ -73,10 +76,10 @@ public class TestNaturalDelegateTest {
     BsTestNatural test1 = new BsTestNatural("a", "b", n1);
     BsTestNatural test2 = new BsTestNatural("b", "c", n2);
     BsTestNatural test3 = new BsTestNatural("c", "d", n3);
-    
+
     // Truncate the test table before inserting new rows.
     del.truncateTable("TestNatural");
-    
+
     // Build the list and insert it.
     List<BsTestNatural> list = new ArrayList<BsTestNatural>(3);
     list.add(test1);
@@ -87,16 +90,13 @@ public class TestNaturalDelegateTest {
 
   /**
    * Test method for
-   * {@link com.poesys.bs.delegate.TestNaturalDelegate#getObject(NaturalPrimaryKey)}.
+   * {@link com.poesys.bs.delegate.TestNaturalDelegate#getObject(NaturalPrimaryKey)}
+   * .
    */
   @Test
   public void testGetObject() {
-    BsTestNatural object = del.getObject(key_a_b);
+    BsTestNatural object = del.getObject(key_b_c);
     assertTrue("No object retrieved", object != null);
-    // Test number using compareTo, not equals, because of precision issues
-    assertTrue("Object value " + object.getCol1()
-               + " not the same as inserted value " + n1, n1.compareTo(object
-        .getCol1()) == 0);
   }
 
   /**
@@ -107,7 +107,10 @@ public class TestNaturalDelegateTest {
   public void testGetAllObjects() {
     List<BsTestNatural> list = del.getAllObjects(2);
     assertTrue("No list of objects retrieved", list != null);
-    assertTrue(list.size() == 3);
+    for (BsTestNatural o : list) {
+      logger.info("Found object " + o.getPrimaryKey().getStringKey());
+    }
+    assertTrue("List of objects has no objects", list.size() > 0);
   }
 
   /**
@@ -124,12 +127,12 @@ public class TestNaturalDelegateTest {
     // Update the object.
     del.update(object);
     // Requery the object.
-    BsTestNatural object2 = del.getObject(key_a_b);
+    BsTestNatural object2 = del.getDatabaseObject(key_a_b);
     // Test the value with compareTo because of precision issues.
     assertTrue("Couldn't requery object", object2 != null);
     assertTrue("Object value " + object.getCol1()
-               + " not the same as updated value " + n2, n2.compareTo(object
-        .getCol1()) == 0);
+                   + " not the same as updated value " + n2,
+               n2.compareTo(object.getCol1()) == 0);
   }
 
   /**
@@ -165,14 +168,15 @@ public class TestNaturalDelegateTest {
     assertTrue("Couldn't query updated object", test2a != null);
     assertTrue("Couldn't requery object", test2a != null);
     assertTrue("Object value " + test2a.getCol1()
-               + " not the same as updated value " + n1, 
+                   + " not the same as updated value " + n1,
                n1.compareTo(test2a.getCol1()) == 0);
     BsTestNatural test3a = del.getObject(key_a_b);
     assertTrue("Found deleted object", test3a == null);
   }
 
   /**
-   * Test the delegate delete() method--{@link TestNaturalDelegate#delete(BsTestNatural)}
+   * Test the delegate delete() method--
+   * {@link TestNaturalDelegate#delete(BsTestNatural)}
    */
   @Test
   public void testDelete() {

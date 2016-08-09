@@ -101,13 +101,13 @@ abstract public class AbstractConnectionDelegate {
    * The name of the subsystem, for use in the resource bundle containing JDBC
    * parameters
    */
-  protected String subsystem = null;
+  protected final String subsystem;
 
   /** The type of the database for the subsystem */
-  protected IConnectionFactory.DBMS dbms = null;
+  protected final IConnectionFactory.DBMS dbms;
 
   /** The connection factory */
-  private IConnectionFactory factory = null;
+  private final IConnectionFactory factory;
 
   /**
    * Standard constructor that sets the name of the subsystem and the database
@@ -121,8 +121,8 @@ abstract public class AbstractConnectionDelegate {
   public AbstractConnectionDelegate(String subsystem,
                                     IConnectionFactory.DBMS dbms) {
     this.subsystem = subsystem;
-    this.dbms = dbms;
-    createFactory();
+    this.dbms = dbms; // before creating factory
+    this.factory = createFactory();
   }
 
   /**
@@ -135,22 +135,25 @@ abstract public class AbstractConnectionDelegate {
    */
   public AbstractConnectionDelegate(String subsystem) {
     this.subsystem = subsystem;
-    createFactory();
+    this.factory = createFactory();
+    this.dbms = factory.getDbms(); // after creating factory
   }
 
   /**
    * Get the connection factory for the delegate to use.
+   * 
+   * @return the factory
    */
-  private void createFactory() {
-    factory = null;
+  private IConnectionFactory createFactory() {
+    IConnectionFactory factory;
     try {
       factory = ConnectionFactoryFactory.getInstance(subsystem, dbms);
-      dbms = factory.getDbms();
     } catch (IllegalArgumentException e) {
       throw new DelegateException(e.getMessage(), e);
     } catch (IOException e) {
       throw new DelegateException(e.getMessage(), e);
     }
+    return factory;
   }
 
   /**
@@ -181,7 +184,6 @@ abstract public class AbstractConnectionDelegate {
    */
   public void flush() throws ConnectionException {
     factory.flush();
-    clearTemporaryCaches();
   }
 
   /**
@@ -192,16 +194,6 @@ abstract public class AbstractConnectionDelegate {
   public void flush(IDbDto dto) {
     IDaoManager manager = DaoManagerFactory.getManager(subsystem);
     manager.removeObjectFromCache(dto.getClass().getName(), dto.getPrimaryKey());
-  }
-
-  /**
-   * Clear any temporary caches from memory.
-   */
-  private void clearTemporaryCaches() {
-    IDaoManager manager = DaoManagerFactory.getManager(subsystem);
-    if (manager != null) {
-      manager.clearTemporaryCaches();
-    }
   }
 
   /**
@@ -284,7 +276,23 @@ abstract public class AbstractConnectionDelegate {
         throw new DelegateException(CLOSE_CONNECTION, e);
       }
     }
-    // Also remove any temporary caches.
-    clearTemporaryCaches();
+  }
+
+  /**
+   * Get the subsystem.
+   * 
+   * @return a subsystem
+   */
+  public String getSubsystem() {
+    return subsystem;
+  }
+
+  /**
+   * Get the dbms.
+   * 
+   * @return a dbms
+   */
+  public IConnectionFactory.DBMS getDbms() {
+    return dbms;
   }
 }

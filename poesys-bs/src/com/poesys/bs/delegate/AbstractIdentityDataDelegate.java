@@ -83,32 +83,34 @@ public abstract class AbstractIdentityDataDelegate<T extends IDto<S>, S extends 
 
   @Override
   public void insert(List<T> list) throws DelegateException {
-    Connection c = getConnection();
+    Connection connection = null;
+
     IInsertCollection<S> inserter =
       factory.getInsertCollection(getInsertSql(), false);
 
     Collection<S> dtos = convertDtoList(list);
 
     try {
+      connection = getConnection();
       // Unchecked conversion here
-      inserter.insert(c, dtos);
+      inserter.insert(connection, dtos);
     } catch (ConstraintViolationException e) {
-      rollBack(c, e.getMessage(), e);
+      rollBack(connection, e.getMessage(), e);
     } catch (SQLException e) {
-      rollBack(c, e.getMessage(), e);
+      rollBack(connection, e.getMessage(), e);
     } catch (BatchException e) {
       // Don't roll back the whole transaction; the DBMS rolls back the
       // individual inserts that failed, but the rest should be committed.
       throw new DelegateException(e.getMessage(), e);
     } finally {
-      commit(c);
-      close(c);
+      commit(connection);
+      close(connection);
     }
   }
 
   @Override
   public void process(List<T> list) throws DelegateException {
-    Connection c = getConnection();
+    Connection connection = null;
 
     // Create the 3 DAOs for inserting, updating, and deleting.
     IInsertCollection<S> inserter =
@@ -121,24 +123,25 @@ public abstract class AbstractIdentityDataDelegate<T extends IDto<S>, S extends 
     // Delete, insert, and update the objects. Each DAO will process only those
     // objects that have the appropriate status for the operation.
     try {
+      connection = getConnection();
       if (deleter != null) {
-        deleter.delete(c, dtos);
+        deleter.delete(connection, dtos);
       }
-      inserter.insert(c, dtos);
+      inserter.insert(connection, dtos);
       if (updater != null) {
-        updater.update(c, dtos);
+        updater.update(connection, dtos);
       }
     } catch (ConstraintViolationException e) {
-      rollBack(c, e.getMessage(), e);
+      rollBack(connection, e.getMessage(), e);
     } catch (SQLException e) {
-      rollBack(c, e.getMessage(), e);
+      rollBack(connection, e.getMessage(), e);
     } catch (BatchException e) {
       // Don't roll back the whole transaction; the DBMS rolls back the
       // individual operations that failed, but the rest should be committed.
       throw new DelegateException(e.getMessage(), e);
     } finally {
-      commit(c);
-      close(c);
+      commit(connection);
+      close(connection);
     }
   }
 }

@@ -44,7 +44,7 @@ public abstract class AbstractDaoDelegate<S extends IDbDto> extends
 
   /** Factory for DAOs the delegate and its subclasses use */
   protected final IDaoFactory<S> factory;
-
+  
   /**
    * Create a DAO Delegate. This is a standard constructor that sets the name of
    * the subsystem and the database type for construction of connections to the

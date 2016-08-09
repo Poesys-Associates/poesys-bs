@@ -17,11 +17,12 @@
 		</fileset>
 		<path path="${build}" />
 	</path>
-	
+
 	<!-- ================================= 
           target: compile Compiles the Java classes               
          ================================= -->
 	<target name="compile" description="Compiles the Java classes">
+<<<<<<< HEAD
 		<mkdir dir="${build}"/>
         <!-- Copy the properties file. -->
         <copy todir="${build}/com/poesys/bs">
@@ -30,6 +31,10 @@
             </fileset>
         </copy>
 		<javac source="1.7" target="1.7" destdir="${build}" deprecation="false" nowarn="on" debug="on" memoryMaximumSize="512m" fork="true" includeantruntime="false">
+=======
+		<mkdir dir="${build}" />
+		<javac source="1.8" target="1.8" destdir="${build}" deprecation="false" nowarn="on" debug="on" memoryMaximumSize="512m" fork="true" includeantruntime="false">
+>>>>>>> develop
 			<classpath refid="project.classpath" />
 			<src path="${src}" />
 			<include name="**/*.java" />
@@ -37,7 +42,7 @@
 	</target>
 
 	<!-- ================================= 
-          target: jar Builds the distribution jar file with the non-test classes and without the properties files             
+          target: jar Builds the distribution jar file and javadoc with the non-test classes and without the properties files             
          ================================= -->
 	<target name="jar" depends="compile">
 		<jar destfile="${dist}/${dist-file}.jar">
@@ -45,6 +50,9 @@
 			<fileset dir="${build}" includes="**/*.properties" excludes="**/*database*, **/*memcached*" />
 			<manifest />
 		</jar>
+		<javadoc access="private" author="true" destdir="doc" doctitle="Phoenix Bioinformatics Java API Client" nodeprecated="false" nodeprecatedlist="false" noindex="false" nonavbar="false" notree="false" source="1.8" sourcefiles="src/com/poesys/bs/dto/CollectionBuilder.java,src/com/poesys/bs/dto/IDto.java,src/com/poesys/bs/delegate/AbstractConnectionDelegate.java,src/com/poesys/bs/delegate/IDataDelegate.java,src/com/poesys/bs/delegate/IReadOnlyDataDelegate.java,src/com/poesys/bs/delegate/AbstractDaoDelegate.java,src/com/poesys/bs/dto/DataAccessDtoListBuilder.java,src/com/poesys/bs/dto/AbstractDto.java,src/com/poesys/bs/delegate/DelegateException.java,src/com/poesys/bs/dto/ListBuilder.java,src/com/poesys/bs/delegate/AbstractDataDelegate.java,src/com/poesys/bs/delegate/AbstractReadOnlyDataDelegate.java,src/com/poesys/bs/delegate/AbstractIdentityDataDelegate.java" sourcepath="src" splitindex="true" use="true" version="true">
+		    <classpath refid="project.classpath" />
+        </javadoc>
 	</target>
 
 	<!-- ================================= 
