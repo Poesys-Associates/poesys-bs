@@ -22,19 +22,8 @@
           target: compile Compiles the Java classes               
          ================================= -->
 	<target name="compile" description="Compiles the Java classes">
-<<<<<<< HEAD
-		<mkdir dir="${build}"/>
-        <!-- Copy the properties file. -->
-        <copy todir="${build}/com/poesys/bs">
-            <fileset dir="${src}/com/poesys/bs/">
-                <include name="*.properties" />
-            </fileset>
-        </copy>
-		<javac source="1.7" target="1.7" destdir="${build}" deprecation="false" nowarn="on" debug="on" memoryMaximumSize="512m" fork="true" includeantruntime="false">
-=======
 		<mkdir dir="${build}" />
 		<javac source="1.8" target="1.8" destdir="${build}" deprecation="false" nowarn="on" debug="on" memoryMaximumSize="512m" fork="true" includeantruntime="false">
->>>>>>> develop
 			<classpath refid="project.classpath" />
 			<src path="${src}" />
 			<include name="**/*.java" />
