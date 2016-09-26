@@ -31,8 +31,6 @@ import com.poesys.db.BatchException;
 import com.poesys.db.ConstraintViolationException;
 import com.poesys.db.NoPrimaryKeyException;
 import com.poesys.db.connection.IConnectionFactory;
-import com.poesys.db.dao.CacheDaoManager;
-import com.poesys.db.dao.IDaoManager;
 import com.poesys.db.dao.ddl.ExecuteSql;
 import com.poesys.db.dao.ddl.IExecuteSql;
 import com.poesys.db.dao.ddl.ISql;
@@ -151,16 +149,6 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
    */
   abstract protected String getClassName();
 
-  /**
-   * Clear the processed flags in the in-memory Java caches of IDbDto objects.
-   */
-  protected void clearProcessedFlags() {
-    IDaoManager inMemoryCacheManager = CacheDaoManager.getInstance();
-    if (inMemoryCacheManager != null) {
-      inMemoryCacheManager.clearAllProcessedFlags();
-    }
-  }
-
   @Override
   public T getObject(K key) throws DelegateException {
     // pass to expiration-based method with no expiration
@@ -187,17 +175,8 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       throw new DelegateException(e.getMessage(), e);
     } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
-    } finally {
-      /*
-       * TODO: VND-164, this clears the processed flags in all the DTOs in the
-       * internal cache so that the next query will not get processing stopped
-       * by the set flag from the previous query. It is possible this won't work
-       * with a full system of threaded queries even though the cache is a
-       * ConcurrentHashMap. I think it is a better solution than clearing the
-       * temp cache, though.
-       */
-      clearProcessedFlags();
     }
+
     return object;
   }
 
@@ -214,7 +193,7 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       IQueryByKey<S> query =
         factory.getDatabaseQueryByKey(getQueryByKeySql(), subsystem);
       if (expiration != -1) {
-      query.setExpiration(expiration);
+        query.setExpiration(expiration);
       }
       S queriedDto = query.queryByKey(key);
       if (queriedDto != null) {
@@ -226,16 +205,6 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       throw new DelegateException(e.getMessage(), e);
     } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
-    } finally {
-      /*
-       * TODO: VND-164, this clears the processed flags in all the DTOs in the
-       * internal cache so that the next query will not get processing stopped
-       * by the set flag from the previous query. It is possible this won't work
-       * with a full system of threaded queries even though the cache is a
-       * ConcurrentHashMap. I think it is a better solution than clearing the
-       * temp cache, though.
-       */
-      clearProcessedFlags();
     }
 
     return object;
@@ -294,7 +263,7 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       IQueryList<S> query =
         factory.getQueryList(getQueryListSql(), subsystem, rows);
       if (expiration != -1) {
-      query.setExpiration(expiration);
+        query.setExpiration(expiration);
       }
       List<S> objects = query.query();
       for (S object : objects) {
@@ -308,16 +277,6 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       throw new DelegateException(e.getMessage(), e);
     } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
-    } finally {
-      /*
-       * TODO: VND-164, this clears the processed flags in all the DTOs in the
-       * internal cache so that the next query will not get processing stopped
-       * by the set flag from the previous query. It is possible this won't work
-       * with a full system of threaded queries even though the cache is a
-       * ConcurrentHashMap. I think it is a better solution than clearing the
-       * temp cache, though.
-       */
-      clearProcessedFlags();
     }
 
     return list;
@@ -539,7 +498,7 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
     Connection connection = null;
     try {
       connection = getConnection();
-      
+
       if (deleter != null) {
         deleter.delete(connection, dtos, dtos.size() / 2);
       }
