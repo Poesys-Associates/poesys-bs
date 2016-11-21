@@ -94,6 +94,7 @@ public abstract class AbstractIdentityDataDelegate<T extends IDto<S>, S extends 
       connection = getConnection();
       // Unchecked conversion here
       inserter.insert(connection, dtos);
+      commit(connection);
     } catch (ConstraintViolationException e) {
       rollBack(connection, e.getMessage(), e);
     } catch (SQLException e) {
@@ -101,9 +102,9 @@ public abstract class AbstractIdentityDataDelegate<T extends IDto<S>, S extends 
     } catch (BatchException e) {
       // Don't roll back the whole transaction; the DBMS rolls back the
       // individual inserts that failed, but the rest should be committed.
+      commit(connection);
       throw new DelegateException(e.getMessage(), e);
     } finally {
-      commit(connection);
       close(connection);
     }
   }
