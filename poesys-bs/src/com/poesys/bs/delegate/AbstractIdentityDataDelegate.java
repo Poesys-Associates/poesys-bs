@@ -5,13 +5,11 @@ package com.poesys.bs.delegate;
 
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 
 import com.poesys.bs.dto.AbstractDto;
 import com.poesys.bs.dto.IDto;
-import com.poesys.db.BatchException;
 import com.poesys.db.ConstraintViolationException;
 import com.poesys.db.connection.IConnectionFactory.DBMS;
 import com.poesys.db.dao.delete.IDeleteCollection;
@@ -93,17 +91,10 @@ public abstract class AbstractIdentityDataDelegate<T extends IDto<S>, S extends 
     try {
       connection = getConnection();
       // Unchecked conversion here
-      inserter.insert(connection, dtos);
+      inserter.insert(dtos);
       commit(connection);
     } catch (ConstraintViolationException e) {
       rollBack(connection, e.getMessage(), e);
-    } catch (SQLException e) {
-      rollBack(connection, e.getMessage(), e);
-    } catch (BatchException e) {
-      // Don't roll back the whole transaction; the DBMS rolls back the
-      // individual inserts that failed, but the rest should be committed.
-      commit(connection);
-      throw new DelegateException(e.getMessage(), e);
     } finally {
       close(connection);
     }
@@ -126,20 +117,14 @@ public abstract class AbstractIdentityDataDelegate<T extends IDto<S>, S extends 
     try {
       connection = getConnection();
       if (deleter != null) {
-        deleter.delete(connection, dtos);
+        deleter.delete(dtos);
       }
-      inserter.insert(connection, dtos);
+      inserter.insert(dtos);
       if (updater != null) {
-        updater.update(connection, dtos);
+        updater.update(dtos);
       }
     } catch (ConstraintViolationException e) {
       rollBack(connection, e.getMessage(), e);
-    } catch (SQLException e) {
-      rollBack(connection, e.getMessage(), e);
-    } catch (BatchException e) {
-      // Don't roll back the whole transaction; the DBMS rolls back the
-      // individual operations that failed, but the rest should be committed.
-      throw new DelegateException(e.getMessage(), e);
     } finally {
       commit(connection);
       close(connection);

@@ -18,19 +18,21 @@
 package com.poesys.bs.delegate;
 
 
-import static org.junit.Assert.assertTrue;
-
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.junit.Test;
 
-import com.poesys.bs.delegate.TestNaturalDelegate;
 import com.poesys.bs.dto.BsTestNatural;
 import com.poesys.db.col.AbstractColumnValue;
 import com.poesys.db.col.StringColumnValue;
+import com.poesys.db.dao.ConnectionTest;
 import com.poesys.db.pk.NaturalPrimaryKey;
 
 
@@ -39,7 +41,7 @@ import com.poesys.db.pk.NaturalPrimaryKey;
  * 
  * @author Robert J. Muller
  */
-public class TestNaturalDelegateTest {
+public class TestNaturalDelegateTest extends ConnectionTest {
   private static final Logger logger =
     Logger.getLogger(TestNaturalDelegateTest.class);
 
@@ -72,13 +74,31 @@ public class TestNaturalDelegateTest {
    */
   @Test
   public void testInsert() {
+    Connection conn = null;
+    try {
+      conn = getConnection();
+      Statement stmt = conn.createStatement();
+      stmt.execute("TRUNCATE TABLE TestNatural");
+      conn.commit();
+    } catch (SQLException e) {
+      logger.error("Error", e);
+    } catch (IOException e) {
+      logger.error("Error", e);
+    } finally {
+      if (conn != null) {
+        try {
+          logger.debug("Closing connection " + conn.hashCode());
+          conn.close();
+        } catch (SQLException e) {
+          // ignore
+        }
+      }
+    }
+
     // Build 3 test natural key objects to insert.
     BsTestNatural test1 = new BsTestNatural("a", "b", n1);
     BsTestNatural test2 = new BsTestNatural("b", "c", n2);
     BsTestNatural test3 = new BsTestNatural("c", "d", n3);
-
-    // Truncate the test table before inserting new rows.
-    del.truncateTable("TestNatural");
 
     // Build the list and insert it.
     List<BsTestNatural> list = new ArrayList<BsTestNatural>(3);
@@ -95,6 +115,34 @@ public class TestNaturalDelegateTest {
    */
   @Test
   public void testGetObject() {
+    BsTestNatural newObject = new BsTestNatural("b", "c", n2);
+
+    Connection conn = null;
+    try {
+      conn = getConnection();
+      Statement stmt = conn.createStatement();
+      stmt.execute("TRUNCATE TABLE TestNatural");
+      conn.commit();
+    } catch (SQLException e) {
+      logger.error("Error", e);
+    } catch (IOException e) {
+      logger.error("Error", e);
+    } finally {
+      if (conn != null) {
+        try {
+          logger.debug("Closing connection " + conn.hashCode());
+          conn.close();
+        } catch (SQLException e) {
+          // ignore
+        }
+      }
+    }
+
+    // Build the list and insert it.
+    List<BsTestNatural> list = new ArrayList<BsTestNatural>(3);
+    list.add(newObject);
+    del.process(list);
+    
     BsTestNatural object = del.getObject(key_b_c);
     assertTrue("No object retrieved", object != null);
   }
@@ -105,9 +153,36 @@ public class TestNaturalDelegateTest {
    */
   @Test
   public void testGetAllObjects() {
-    List<BsTestNatural> list = del.getAllObjects(2);
-    assertTrue("No list of objects retrieved", list != null);
-    for (BsTestNatural o : list) {
+    BsTestNatural newObject = new BsTestNatural("b", "c", n2);
+
+    Connection conn = null;
+    try {
+      conn = getConnection();
+      Statement stmt = conn.createStatement();
+      stmt.execute("TRUNCATE TABLE TestNatural");
+      conn.commit();
+    } catch (SQLException e) {
+      logger.error("Error", e);
+    } catch (IOException e) {
+      logger.error("Error", e);
+    } finally {
+      if (conn != null) {
+        try {
+          logger.debug("Closing connection " + conn.hashCode());
+          conn.close();
+        } catch (SQLException e) {
+          // ignore
+        }
+      }
+    }
+
+    // Build the list and insert it.
+    List<BsTestNatural> list = new ArrayList<BsTestNatural>(3);
+    list.add(newObject);
+    del.process(list);
+    List<BsTestNatural> list2 = del.getAllObjects(2);
+    assertTrue("No list of objects retrieved", list2 != null);
+    for (BsTestNatural o : list2) {
       logger.info("Found object " + o.getPrimaryKey().getStringKey());
     }
     assertTrue("List of objects has no objects", list.size() > 0);
@@ -119,20 +194,49 @@ public class TestNaturalDelegateTest {
    */
   @Test
   public void testUpdate() {
-    // Query the a-b object.
-    BsTestNatural object = del.getObject(key_a_b);
-    assertTrue("Couldn't query object for update", object != null);
+    Connection conn = null;
+    try {
+      conn = getConnection();
+      Statement stmt = conn.createStatement();
+      stmt.execute("TRUNCATE TABLE TestNatural");
+    } catch (SQLException e) {
+      logger.error("Error", e);
+    } catch (IOException e) {
+      logger.error("Error", e);
+    } finally {
+      if (conn != null) {
+        try {
+          logger.debug("Closing connection " + conn.hashCode());
+          conn.close();
+        } catch (SQLException e) {
+          // ignore
+        }
+      }
+    }
+
+    // Build 3 test natural key objects to insert.
+    BsTestNatural test1 = new BsTestNatural("a", "b", n1);
+    BsTestNatural test2 = new BsTestNatural("b", "c", n2);
+    BsTestNatural test3 = new BsTestNatural("c", "d", n3);
+
+    // Build the list and insert it.
+    List<BsTestNatural> list = new ArrayList<BsTestNatural>(3);
+    list.add(test1);
+    list.add(test2);
+    list.add(test3);
+    del.insert(list);
+
     // Update the value of the a-b object to n2.
-    object.setCol1(n2);
+    test1.setCol1(n2);
     // Update the object.
-    del.update(object);
+    del.update(test1);
     // Requery the object.
-    BsTestNatural object2 = del.getDatabaseObject(key_a_b);
+    BsTestNatural test1a = del.getDatabaseObject(key_a_b);
     // Test the value with compareTo because of precision issues.
-    assertTrue("Couldn't requery object", object2 != null);
-    assertTrue("Object value " + object.getCol1()
+    assertTrue("Couldn't requery object", test1a != null);
+    assertTrue("Object value " + test1.getCol1()
                    + " not the same as updated value " + n2,
-               n2.compareTo(object.getCol1()) == 0);
+               n2.compareTo(test1.getCol1()) == 0);
   }
 
   /**
@@ -141,21 +245,49 @@ public class TestNaturalDelegateTest {
    */
   @Test
   public void testProcess() {
+    Connection conn = null;
+    try {
+      conn = getConnection();
+      Statement stmt = conn.createStatement();
+      stmt.execute("TRUNCATE TABLE TestNatural");
+      conn.commit();
+    } catch (SQLException e) {
+      logger.error("Error", e);
+    } catch (IOException e) {
+      logger.error("Error", e);
+    } finally {
+      if (conn != null) {
+        try {
+          logger.debug("Closing connection " + conn.hashCode());
+          conn.close();
+        } catch (SQLException e) {
+          // ignore
+        }
+      }
+    }
+
+    // Build 3 test natural key objects to insert.
+    BsTestNatural test1 = new BsTestNatural("a", "b", n1);
+    BsTestNatural test2 = new BsTestNatural("b", "c", n2);
+    BsTestNatural test3 = new BsTestNatural("c", "d", n3);
+
+    // Build the list and insert it.
+    List<BsTestNatural> list = new ArrayList<BsTestNatural>(3);
+    list.add(test1);
+    list.add(test2);
+    list.add(test3);
+    del.insert(list);
+
     // Create an object to insert.
-    BsTestNatural test1 = new BsTestNatural("z", "z", n1);
-    // Query and update object b-c
-    BsTestNatural test2 = del.getObject(key_b_c);
-    assertTrue("Couldn't query object for update", test2 != null);
+    BsTestNatural testInsert = new BsTestNatural("z", "z", n1);
     // Update the value of the b-c object to n1.
     test2.setCol1(n1);
-    // Query object a-b and mark it for deletion.
-    BsTestNatural test3 = del.getObject(key_a_b);
-    assertTrue("Couldn't query object for delete", test3 != null);
+    // Mark c-d object deleted.
     test3.delete();
 
     // Build a list of the objects and process them.
-    List<BsTestNatural> list = new ArrayList<BsTestNatural>(3);
-    list.add(test1);
+    list = new ArrayList<BsTestNatural>(3);
+    list.add(testInsert);
     list.add(test2);
     list.add(test3);
 
@@ -180,9 +312,44 @@ public class TestNaturalDelegateTest {
    */
   @Test
   public void testDelete() {
-    // Query object z-z.
-    BsTestNatural test = del.getObject(key_z_z);
-    assertTrue("Couldn't query object z-z for delete", test != null);
-    del.delete(test);
+    Connection conn = null;
+    try {
+      conn = getConnection();
+      Statement stmt = conn.createStatement();
+      stmt.execute("TRUNCATE TABLE TestNatural");
+      conn.commit();
+    } catch (SQLException e) {
+      logger.error("Error", e);
+    } catch (IOException e) {
+      logger.error("Error", e);
+    } finally {
+      if (conn != null) {
+        try {
+          logger.debug("Closing connection " + conn.hashCode());
+          conn.close();
+        } catch (SQLException e) {
+          // ignore
+        }
+      }
+    }
+
+    // Build 3 test natural key objects to insert.
+    BsTestNatural test1 = new BsTestNatural("a", "b", n1);
+    BsTestNatural test2 = new BsTestNatural("b", "c", n2);
+    BsTestNatural test3 = new BsTestNatural("c", "d", n3);
+
+    // Build the list and insert it.
+    List<BsTestNatural> list = new ArrayList<BsTestNatural>(3);
+    list.add(test1);
+    list.add(test2);
+    list.add(test3);
+    del.insert(list);
+
+    // Delete the a-b object.
+    del.delete(test1);
+    // Requery the object.
+    BsTestNatural test1a = del.getDatabaseObject(key_a_b);
+    // Test the value with compareTo because of precision issues.
+    assertTrue("Object found in database, not deleted", test1a == null);
   }
 }

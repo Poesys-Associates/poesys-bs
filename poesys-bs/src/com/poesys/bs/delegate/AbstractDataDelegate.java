@@ -19,7 +19,6 @@ package com.poesys.bs.delegate;
 
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -27,7 +26,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.poesys.bs.dto.AbstractDto;
 import com.poesys.bs.dto.IDto;
-import com.poesys.db.BatchException;
 import com.poesys.db.ConstraintViolationException;
 import com.poesys.db.NoPrimaryKeyException;
 import com.poesys.db.connection.IConnectionFactory;
@@ -169,11 +167,7 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       if (queriedDto != null) {
         object = wrapData(queriedDto);
       }
-    } catch (SQLException e) {
-      throw new DelegateException(e.getMessage(), e);
     } catch (NoPrimaryKeyException e) {
-      throw new DelegateException(e.getMessage(), e);
-    } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
     }
 
@@ -199,11 +193,7 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       if (queriedDto != null) {
         object = wrapData(queriedDto);
       }
-    } catch (SQLException e) {
-      throw new DelegateException(e.getMessage(), e);
     } catch (NoPrimaryKeyException e) {
-      throw new DelegateException(e.getMessage(), e);
-    } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
     }
 
@@ -271,11 +261,7 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
         T dto = wrapData((S)object);
         list.add(dto);
       }
-    } catch (ConstraintViolationException e) {
-      throw new DelegateException(e.getMessage(), e);
-    } catch (SQLException e) {
-      throw new DelegateException(e.getMessage(), e);
-    } catch (BatchException e) {
+    } catch (Throwable e) {
       throw new DelegateException(e.getMessage(), e);
     }
 
@@ -306,19 +292,13 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
     try {
       connection = getConnection();
-      inserter.insert(connection, dtos, dtos.size() / 2);
+      inserter.insert(dtos, dtos.size() / 2);
       // INSERT done, update status to EXISTING
       for (IDbDto dto : dtos) {
         dto.setExisting();
       }
     } catch (ConstraintViolationException e) {
       rollBack(connection, e.getMessage(), e);
-    } catch (SQLException e) {
-      rollBack(connection, e.getMessage(), e);
-    } catch (BatchException e) {
-      // Don't roll back the whole transaction; the DBMS rolls back the
-      // individual inserts that failed, but the rest should be committed.
-      throw new DelegateException(e.getMessage(), e);
     } finally {
       commit(connection);
       close(connection);
@@ -354,16 +334,9 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
     if (updater != null) {
       try {
         connection = getConnection();
-        updater.update(connection, object.toDto());
+        updater.update(object.toDto());
       } catch (ConstraintViolationException e) {
         rollBack(connection, e.getMessage(), e);
-      } catch (SQLException e) {
-        rollBack(connection, e.getMessage(), e);
-      } catch (BatchException e) {
-        // A batch error happened on some nested object list; don't roll back
-        // the whole transaction, just let the DBMS roll back the operation that
-        // failed.
-        throw new DelegateException(e.getMessage(), e);
       } finally {
         commit(connection);
         close(connection);
@@ -399,15 +372,9 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
       try {
         connection = getConnection();
-        updater.update(connection, dtos, dtos.size() / 2);
+        updater.update(dtos, dtos.size() / 2);
       } catch (ConstraintViolationException e) {
         rollBack(connection, e.getMessage(), e);
-      } catch (SQLException e) {
-        rollBack(connection, e.getMessage(), e);
-      } catch (BatchException e) {
-        // Don't roll back the whole transaction; the DBMS rolls back the
-        // individual inserts that failed, but the rest should be committed.
-        throw new DelegateException(e.getMessage(), e);
       } finally {
         commit(connection);
         close(connection);
@@ -428,16 +395,9 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       // Set the object's status to delete.
       object.delete();
       // Delete the object with the DAO; object must implement IDbDto interface.
-      deleter.delete(connection, object.toDto());
+      deleter.delete(object.toDto());
     } catch (ConstraintViolationException e) {
       rollBack(connection, e.getMessage(), e);
-    } catch (SQLException e) {
-      rollBack(connection, e.getMessage(), e);
-    } catch (BatchException e) {
-      // A batch error happened on some nested object list; don't roll back
-      // the whole transaction, just let the DBMS roll back the operation that
-      // failed.
-      throw new DelegateException(e.getMessage(), e);
     } finally {
       commit(connection);
       close(connection);
@@ -469,15 +429,9 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
     try {
       connection = getConnection();
-      deleter.delete(connection, dtos, dtos.size() / 2);
+      deleter.delete(dtos, dtos.size() / 2);
     } catch (ConstraintViolationException e) {
       rollBack(connection, e.getMessage(), e);
-    } catch (SQLException e) {
-      rollBack(connection, e.getMessage(), e);
-    } catch (BatchException e) {
-      // Don't roll back the whole transaction; the DBMS rolls back the
-      // individual inserts that failed, but the rest should be committed.
-      throw new DelegateException(e.getMessage(), e);
     } finally {
       commit(connection);
       close(connection);
@@ -493,17 +447,15 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
     Collection<S> dtos = convertDtoList(list);
 
-    // Delete, insert, and update the objects. Each DAO will process only those
-    // objects that have the appropriate status for the operation.
-    Connection connection = null;
     try {
-      connection = getConnection();
-
+      // Delete, insert, and update the objects. Each DAO will process only
+      // those
+      // objects that have the appropriate status for the operation.
       if (deleter != null) {
-        deleter.delete(connection, dtos, dtos.size() / 2);
+        deleter.delete(dtos, dtos.size() / 2);
       }
       // Inserter always exists.
-      inserter.insert(connection, dtos, dtos.size() / 2);
+      inserter.insert(dtos, dtos.size() / 2);
       // INSERT done, set NEW to EXISTING
       for (IDbDto dto : dtos) {
         if (dto.getStatus().equals(Status.NEW)) {
@@ -511,19 +463,9 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
         }
       }
       if (updater != null) {
-        updater.update(connection, dtos, dtos.size() / 2);
+        updater.update(dtos, dtos.size() / 2);
       }
-    } catch (ConstraintViolationException e) {
-      rollBack(connection, e.getMessage(), e);
-    } catch (SQLException e) {
-      rollBack(connection, e.getMessage(), e);
-    } catch (BatchException e) {
-      // Don't roll back the whole transaction; the DBMS rolls back the
-      // individual operations that failed, but the rest should be committed.
-      throw new DelegateException(e.getMessage(), e);
     } finally {
-      commit(connection);
-      close(connection);
       // Finalize inserts and deletes.
       finalizeStatus(dtos, Status.EXISTING);
       finalizeStatus(dtos, Status.DELETED);
@@ -615,11 +557,7 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
     ISql sql = new TruncateTableSql(tableName);
     IExecuteSql executive = new ExecuteSql(sql);
 
-    try {
-      connection = getConnection();
-      executive.execute(connection);
-    } catch (SQLException e) {
-      throw new DelegateException(e.getMessage(), e);
-    }
+    connection = getConnection();
+    executive.execute(connection);
   }
 }

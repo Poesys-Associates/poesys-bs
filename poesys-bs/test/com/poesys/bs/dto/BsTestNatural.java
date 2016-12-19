@@ -53,11 +53,6 @@ public class BsTestNatural extends AbstractDto<TestNatural> {
     super(new TestNatural(key1, key2, col1));
   }
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see com.poesys.bs.dto.AbstractDto#equals(java.lang.Object)
-   */
   @Override
   public boolean equals(Object arg0) {
     // Test whether the embedded dtos have all the same values.
@@ -65,11 +60,6 @@ public class BsTestNatural extends AbstractDto<TestNatural> {
     return dto.equals(that.dto);
   }
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see com.poesys.bs.dto.AbstractDto#hashCode()
-   */
   @Override
   public int hashCode() {
     // Return the hash code for the embedded TestNatural object.
@@ -112,18 +102,12 @@ public class BsTestNatural extends AbstractDto<TestNatural> {
     dto.setCol1(col1);
   }
 
-  /**
-   * @return the primary key
-   */
+  @Override
   public IPrimaryKey getPrimaryKey() {
     return dto.getPrimaryKey();
   }
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see java.lang.Comparable#compareTo(java.lang.Object)
-   */
+  @Override
   public int compareTo(IDto<TestNatural> o) {
     return dto.compareTo(o.toDto());
   }

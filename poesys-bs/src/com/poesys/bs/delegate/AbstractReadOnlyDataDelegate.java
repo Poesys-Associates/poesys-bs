@@ -18,14 +18,11 @@
 package com.poesys.bs.delegate;
 
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.poesys.bs.dto.AbstractDto;
 import com.poesys.bs.dto.IDto;
-import com.poesys.db.BatchException;
-import com.poesys.db.ConstraintViolationException;
 import com.poesys.db.NoPrimaryKeyException;
 import com.poesys.db.connection.IConnectionFactory;
 import com.poesys.db.dao.query.IKeyQuerySql;
@@ -128,13 +125,7 @@ abstract public class AbstractReadOnlyDataDelegate<T extends IDto<S>, S extends 
       if (queriedDto != null) {
         object = wrapData(queriedDto);
       }
-    } catch (SQLException e) {
-      logger.error(getQueryByKeySql().getSql(key));
-      logger.error("Key value: " + key.getValueList());
-      throw new DelegateException(e.getMessage(), e);
     } catch (NoPrimaryKeyException e) {
-      throw new DelegateException(e.getMessage(), e);
-    } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
     }
     return object;
@@ -151,11 +142,7 @@ abstract public class AbstractReadOnlyDataDelegate<T extends IDto<S>, S extends 
       if (queriedDto != null) {
         object = wrapData(queriedDto);
       }
-    } catch (SQLException e) {
-      throw new DelegateException(e.getMessage(), e);
     } catch (NoPrimaryKeyException e) {
-      throw new DelegateException(e.getMessage(), e);
-    } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
     }
     return object;
@@ -173,11 +160,7 @@ abstract public class AbstractReadOnlyDataDelegate<T extends IDto<S>, S extends 
       if (queriedDto != null) {
         object = wrapData(queriedDto);
       }
-    } catch (SQLException e) {
-      throw new DelegateException(e.getMessage(), e);
     } catch (NoPrimaryKeyException e) {
-      throw new DelegateException(e.getMessage(), e);
-    } catch (BatchException e) {
       throw new DelegateException(e.getMessage(), e);
     }
     return object;
@@ -234,11 +217,7 @@ abstract public class AbstractReadOnlyDataDelegate<T extends IDto<S>, S extends 
         T dto = wrapData((S)object);
         list.add(dto);
       }
-    } catch (ConstraintViolationException e) {
-      throw new DelegateException(e.getMessage(), e);
-    } catch (SQLException e) {
-      throw new DelegateException(e.getMessage(), e);
-    } catch (BatchException e) {
+    } catch (Throwable e) {
       throw new DelegateException(e.getMessage(), e);
     }
 

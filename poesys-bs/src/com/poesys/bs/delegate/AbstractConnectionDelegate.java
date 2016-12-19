@@ -268,9 +268,9 @@ abstract public class AbstractConnectionDelegate {
     if (connection != null) {
       try {
         if (!connection.isClosed()) {
-          String connectionString = connection.toString();
+          int connectionId = connection.hashCode();
           connection.close();
-          logger.debug("Closed connection " + connectionString);
+          logger.debug("Closed connection " + connectionId);
         }
       } catch (SQLException e) {
         throw new DelegateException(CLOSE_CONNECTION, e);
