@@ -553,11 +553,8 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
   @Override
   public void truncateTable(String tableName) throws DelegateException {
-    Connection connection = null;
     ISql sql = new TruncateTableSql(tableName);
-    IExecuteSql executive = new ExecuteSql(sql);
-
-    connection = getConnection();
-    executive.execute(connection);
+    IExecuteSql executive = new ExecuteSql(sql, subsystem);
+    executive.execute();
   }
 }
