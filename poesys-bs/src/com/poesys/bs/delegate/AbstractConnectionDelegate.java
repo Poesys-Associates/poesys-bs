@@ -34,6 +34,14 @@ import com.poesys.db.dto.IDbDto;
 
 
 /**
+ * <p><strong>
+ * NOTE: as of 12/22/2016, Poesys/DB no longer uses these kinds of external
+ * connections in the business layer. The new Poesys Tracking Thread approach
+ * manages all connections dynamically within the database access layer. There
+ * may occasionally be a need for using some kind of independent connection, so
+ * this class remains but it is no longer used by Poesys/DB and is deprecated.
+ * The subsystem data member has moved down into the AbstractDaoDelegate class.
+ * </strong></p>
  * <p>
  * An abstract base class for the business delegates in the application that
  * require a database connection and managed transactions. This abstract class
@@ -77,6 +85,7 @@ import com.poesys.db.dto.IDbDto;
  * 
  * @author Robert J. Muller
  */
+@Deprecated
 abstract public class AbstractConnectionDelegate {
   /** Log4j logger for the class */
   Logger logger = Logger.getLogger(AbstractConnectionDelegate.class);

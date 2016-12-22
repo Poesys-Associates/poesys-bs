@@ -19,6 +19,7 @@ package com.poesys.bs.dto;
 
 
 import com.poesys.bs.delegate.DelegateException;
+import com.poesys.db.Message;
 import com.poesys.db.dto.IDbDto;
 import com.poesys.db.pk.IPrimaryKey;
 
@@ -110,7 +111,7 @@ public abstract class AbstractDto<T extends IDbDto> implements IDto<T> {
    */
   public AbstractDto(T dto) throws DelegateException {
     if (dto == null) {
-      throw new DelegateException(NO_OBJECT);
+      throw new DelegateException(Message.getMessage(NO_OBJECT, null));
     }
     this.dto = dto;
   }

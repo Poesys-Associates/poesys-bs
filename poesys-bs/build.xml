@@ -34,7 +34,7 @@
           target: jar Builds the distribution jar file and javadoc with the non-test classes and without the properties files             
          ================================= -->
 	<target name="jar" depends="jar-no-javadoc">
-		<javadoc access="private" author="true" destdir="doc" doctitle="Phoenix Bioinformatics Java API Client" nodeprecated="false" nodeprecatedlist="false" noindex="false" nonavbar="false" notree="false" source="1.8" sourcefiles="src/com/poesys/bs/dto/CollectionBuilder.java,src/com/poesys/bs/dto/IDto.java,src/com/poesys/bs/delegate/AbstractConnectionDelegate.java,src/com/poesys/bs/delegate/IDataDelegate.java,src/com/poesys/bs/delegate/IReadOnlyDataDelegate.java,src/com/poesys/bs/delegate/AbstractDaoDelegate.java,src/com/poesys/bs/dto/DataAccessDtoListBuilder.java,src/com/poesys/bs/dto/AbstractDto.java,src/com/poesys/bs/delegate/DelegateException.java,src/com/poesys/bs/dto/ListBuilder.java,src/com/poesys/bs/delegate/AbstractDataDelegate.java,src/com/poesys/bs/delegate/AbstractReadOnlyDataDelegate.java,src/com/poesys/bs/delegate/AbstractIdentityDataDelegate.java" sourcepath="src" splitindex="true" use="true" version="true">
+		<javadoc access="private" author="true" destdir="doc" doctitle="Phoenix Bioinformatics Java API Client" nodeprecated="false" nodeprecatedlist="false" noindex="false" nonavbar="false" notree="false" source="1.8" sourcepath="src" splitindex="true" use="true" version="true">
 		    <classpath refid="project.classpath" />
         </javadoc>
 	</target>

@@ -24,7 +24,7 @@ import java.util.List;
 import com.poesys.bs.dto.AbstractDto;
 import com.poesys.bs.dto.IDto;
 import com.poesys.db.NoPrimaryKeyException;
-import com.poesys.db.connection.IConnectionFactory;
+import com.poesys.db.connection.IConnectionFactory.DBMS;
 import com.poesys.db.dao.query.IKeyQuerySql;
 import com.poesys.db.dao.query.IQueryByKey;
 import com.poesys.db.dao.query.IQueryList;
@@ -97,7 +97,7 @@ abstract public class AbstractReadOnlyDataDelegate<T extends IDto<S>, S extends 
    *          this delegate caches in a cache that supports object expiration
    */
   public AbstractReadOnlyDataDelegate(String subsystem,
-                                      IConnectionFactory.DBMS dbms,
+                                      DBMS dbms,
                                       Integer expiration) {
     super(subsystem, dbms, expiration);
   }

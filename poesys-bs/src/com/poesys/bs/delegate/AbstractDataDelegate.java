@@ -18,7 +18,6 @@
 package com.poesys.bs.delegate;
 
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -26,9 +25,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.poesys.bs.dto.AbstractDto;
 import com.poesys.bs.dto.IDto;
-import com.poesys.db.ConstraintViolationException;
 import com.poesys.db.NoPrimaryKeyException;
-import com.poesys.db.connection.IConnectionFactory;
+import com.poesys.db.connection.IConnectionFactory.DBMS;
 import com.poesys.db.dao.ddl.ExecuteSql;
 import com.poesys.db.dao.ddl.IExecuteSql;
 import com.poesys.db.dao.ddl.ISql;
@@ -113,7 +111,7 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
    *          this delegate caches in a cache that supports object expiration
    */
   public AbstractDataDelegate(String subsystem,
-                              IConnectionFactory.DBMS dbms,
+                              DBMS dbms,
                               Integer expiration) {
     super(subsystem, dbms, expiration);
   }
@@ -285,23 +283,17 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
   @Override
   public void insert(List<T> list) throws DelegateException {
-    Connection connection = null;
     IInsertBatch<S> inserter = factory.getInsertBatch(getInsertSql());
 
     Collection<S> dtos = convertDtoList(list);
 
     try {
-      connection = getConnection();
       inserter.insert(dtos, dtos.size() / 2);
       // INSERT done, update status to EXISTING
       for (IDbDto dto : dtos) {
         dto.setExisting();
       }
-    } catch (ConstraintViolationException e) {
-      rollBack(connection, e.getMessage(), e);
     } finally {
-      commit(connection);
-      close(connection);
       finalizeStatus(dtos, Status.EXISTING);
     }
   }
@@ -325,22 +317,12 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
   @Override
   public void update(T object) throws DelegateException {
-    Connection connection = null;
-
     // Create the DAO for updating S objects.
     IUpdate<S> updater = factory.getUpdate(getUpdateSql());
 
     // Update the object using the DAO if the object is updatable.
     if (updater != null) {
-      try {
-        connection = getConnection();
-        updater.update(object.toDto());
-      } catch (ConstraintViolationException e) {
-        rollBack(connection, e.getMessage(), e);
-      } finally {
-        commit(connection);
-        close(connection);
-      }
+      updater.update(object.toDto());
     }
   }
 
@@ -363,45 +345,28 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
   @Override
   public void updateBatch(List<T> list) throws DelegateException {
-    Connection connection = null;
     IUpdateBatch<S> updater = factory.getUpdateBatch(getUpdateSql());
 
     // Update if the object is updatable.
     if (updater != null) {
       Collection<S> dtos = convertDtoList(list);
 
-      try {
-        connection = getConnection();
-        updater.update(dtos, dtos.size() / 2);
-      } catch (ConstraintViolationException e) {
-        rollBack(connection, e.getMessage(), e);
-      } finally {
-        commit(connection);
-        close(connection);
-      }
+      updater.update(dtos, dtos.size() / 2);
     }
   }
 
+  @Override
   public void delete(T object) throws DelegateException {
     if (object == null) {
       throw new DelegateException(NO_OBJECT_MSG);
     }
 
-    Connection connection = null;
     IDelete<S> deleter = factory.getDelete(getDeleteSql());
 
-    try {
-      connection = getConnection();
-      // Set the object's status to delete.
-      object.delete();
-      // Delete the object with the DAO; object must implement IDbDto interface.
-      deleter.delete(object.toDto());
-    } catch (ConstraintViolationException e) {
-      rollBack(connection, e.getMessage(), e);
-    } finally {
-      commit(connection);
-      close(connection);
-    }
+    // Set the object's status to delete.
+    object.delete();
+    // Delete the object with the DAO; object must implement IDbDto interface.
+    deleter.delete(object.toDto());
   }
 
   /**
@@ -423,19 +388,10 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
   @Override
   public void deleteBatch(List<T> list) throws DelegateException {
-    Connection connection = null;
     IDeleteBatch<S> deleter = factory.getDeleteBatch(getDeleteSql());
     Collection<S> dtos = convertDtoList(list);
 
-    try {
-      connection = getConnection();
-      deleter.delete(dtos, dtos.size() / 2);
-    } catch (ConstraintViolationException e) {
-      rollBack(connection, e.getMessage(), e);
-    } finally {
-      commit(connection);
-      close(connection);
-    }
+    deleter.delete(dtos, dtos.size() / 2);
   }
 
   @Override

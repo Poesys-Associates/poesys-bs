@@ -4,13 +4,11 @@
 package com.poesys.bs.delegate;
 
 
-import java.sql.Connection;
 import java.util.Collection;
 import java.util.List;
 
 import com.poesys.bs.dto.AbstractDto;
 import com.poesys.bs.dto.IDto;
-import com.poesys.db.ConstraintViolationException;
 import com.poesys.db.connection.IConnectionFactory.DBMS;
 import com.poesys.db.dao.delete.IDeleteCollection;
 import com.poesys.db.dao.insert.IInsertCollection;
@@ -81,29 +79,17 @@ public abstract class AbstractIdentityDataDelegate<T extends IDto<S>, S extends 
 
   @Override
   public void insert(List<T> list) throws DelegateException {
-    Connection connection = null;
-
     IInsertCollection<S> inserter =
       factory.getInsertCollection(getInsertSql(), false);
 
     Collection<S> dtos = convertDtoList(list);
 
-    try {
-      connection = getConnection();
-      // Unchecked conversion here
-      inserter.insert(dtos);
-      commit(connection);
-    } catch (ConstraintViolationException e) {
-      rollBack(connection, e.getMessage(), e);
-    } finally {
-      close(connection);
-    }
+    // Unchecked conversion here
+    inserter.insert(dtos);
   }
 
   @Override
   public void process(List<T> list) throws DelegateException {
-    Connection connection = null;
-
     // Create the 3 DAOs for inserting, updating, and deleting.
     IInsertCollection<S> inserter =
       factory.getInsertCollection(getInsertSql(), false);
@@ -114,20 +100,12 @@ public abstract class AbstractIdentityDataDelegate<T extends IDto<S>, S extends 
 
     // Delete, insert, and update the objects. Each DAO will process only those
     // objects that have the appropriate status for the operation.
-    try {
-      connection = getConnection();
-      if (deleter != null) {
-        deleter.delete(dtos);
-      }
-      inserter.insert(dtos);
-      if (updater != null) {
-        updater.update(dtos);
-      }
-    } catch (ConstraintViolationException e) {
-      rollBack(connection, e.getMessage(), e);
-    } finally {
-      commit(connection);
-      close(connection);
+    if (deleter != null) {
+      deleter.delete(dtos);
+    }
+    inserter.insert(dtos);
+    if (updater != null) {
+      updater.update(dtos);
     }
   }
 }
