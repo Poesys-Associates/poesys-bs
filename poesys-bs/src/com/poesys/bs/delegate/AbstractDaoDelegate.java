@@ -40,6 +40,8 @@ import com.poesys.db.dto.IDbDto;
 public abstract class AbstractDaoDelegate<S extends IDbDto> {
   /** The database subsystem for the DTOs */
   protected final String subsystem;
+  /** The database manager for the subsystem */
+  protected final DBMS dbms;
   /** DAO Manager singleton for factory generation */
   protected final IDaoManager manager;
 
@@ -59,6 +61,7 @@ public abstract class AbstractDaoDelegate<S extends IDbDto> {
   public AbstractDaoDelegate(String subsystem, DBMS dbms, Integer expiration) {
     // Create the DAO factory with the object's class name.
     this.subsystem = subsystem;
+    this.dbms = dbms;
     manager = DaoManagerFactory.getManager(subsystem);
     factory = manager.getFactory(getClassName(), subsystem, expiration);
   }
@@ -74,6 +77,7 @@ public abstract class AbstractDaoDelegate<S extends IDbDto> {
    */
   public AbstractDaoDelegate(String subsystem, Integer expiration) {
     this.subsystem = subsystem;
+    this.dbms = DBMS.JNDI;
     // Create the DAO factory with the object's class name.
     manager = DaoManagerFactory.getManager(subsystem);
     factory = manager.getFactory(getClassName(), subsystem, expiration);
