@@ -405,8 +405,7 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
     try {
       // Delete, insert, and update the objects. Each DAO will process only
-      // those
-      // objects that have the appropriate status for the operation.
+      // those objects that have the appropriate status for the operation.
       if (deleter != null) {
         deleter.delete(dtos, dtos.size() / 2);
       }
