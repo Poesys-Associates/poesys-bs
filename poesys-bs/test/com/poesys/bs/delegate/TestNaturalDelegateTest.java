@@ -45,13 +45,14 @@ public class TestNaturalDelegateTest extends ConnectionTest {
   private static final Logger logger =
     Logger.getLogger(TestNaturalDelegateTest.class);
 
-  private static final TestNaturalDelegate del = new TestNaturalDelegate();
-  private static final BigDecimal n1 = new BigDecimal("1.234");
-  private static final BigDecimal n2 = new BigDecimal("2.3456");
-  private static final BigDecimal n3 = new BigDecimal("2.3456");
-  private static final NaturalPrimaryKey key_a_b = createKey("a", "b");
-  private static final NaturalPrimaryKey key_b_c = createKey("b", "c");
-  private static final NaturalPrimaryKey key_z_z = createKey("z", "z");
+  private static final TestNaturalDelegate DELEGATE = new TestNaturalDelegate();
+  private static final BigDecimal N1 = new BigDecimal("1.234");
+  private static final BigDecimal N2 = new BigDecimal("2.3456");
+  private static final BigDecimal N3 = new BigDecimal("2.3456");
+  private static final NaturalPrimaryKey KEY1 = createKey("a", "b");
+  private static final NaturalPrimaryKey KEY2 = createKey("b", "c");
+  private static final NaturalPrimaryKey KEY3 = createKey("c", "d");
+  private static final NaturalPrimaryKey KEY4 = createKey("z", "z");
 
   /**
    * Create a Natural Primary Key using two input strings. This static method
@@ -96,16 +97,16 @@ public class TestNaturalDelegateTest extends ConnectionTest {
     }
 
     // Build 3 test natural key objects to insert.
-    BsTestNatural test1 = new BsTestNatural("a", "b", n1);
-    BsTestNatural test2 = new BsTestNatural("b", "c", n2);
-    BsTestNatural test3 = new BsTestNatural("c", "d", n3);
+    BsTestNatural test1 = new BsTestNatural("a", "b", N1);
+    BsTestNatural test2 = new BsTestNatural("b", "c", N2);
+    BsTestNatural test3 = new BsTestNatural("c", "d", N3);
 
     // Build the list and insert it.
     List<BsTestNatural> list = new ArrayList<BsTestNatural>(3);
     list.add(test1);
     list.add(test2);
     list.add(test3);
-    del.insert(list);
+    DELEGATE.insert(list);
   }
 
   /**
@@ -115,7 +116,7 @@ public class TestNaturalDelegateTest extends ConnectionTest {
    */
   @Test
   public void testGetObject() {
-    BsTestNatural newObject = new BsTestNatural("b", "c", n2);
+    BsTestNatural newObject = new BsTestNatural("b", "c", N2);
 
     Connection conn = null;
     try {
@@ -141,9 +142,9 @@ public class TestNaturalDelegateTest extends ConnectionTest {
     // Build the list and insert it.
     List<BsTestNatural> list = new ArrayList<BsTestNatural>(3);
     list.add(newObject);
-    del.process(list);
+    DELEGATE.process(list);
     
-    BsTestNatural object = del.getObject(key_b_c);
+    BsTestNatural object = DELEGATE.getObject(KEY2);
     assertTrue("No object retrieved", object != null);
   }
 
@@ -153,7 +154,7 @@ public class TestNaturalDelegateTest extends ConnectionTest {
    */
   @Test
   public void testGetAllObjects() {
-    BsTestNatural newObject = new BsTestNatural("b", "c", n2);
+    BsTestNatural newObject = new BsTestNatural("b", "c", N2);
 
     Connection conn = null;
     try {
@@ -179,8 +180,8 @@ public class TestNaturalDelegateTest extends ConnectionTest {
     // Build the list and insert it.
     List<BsTestNatural> list = new ArrayList<BsTestNatural>(3);
     list.add(newObject);
-    del.process(list);
-    List<BsTestNatural> list2 = del.getAllObjects(2);
+    DELEGATE.process(list);
+    List<BsTestNatural> list2 = DELEGATE.getAllObjects(2);
     assertTrue("No list of objects retrieved", list2 != null);
     for (BsTestNatural o : list2) {
       logger.info("Found object " + o.getPrimaryKey().getStringKey());
@@ -215,28 +216,28 @@ public class TestNaturalDelegateTest extends ConnectionTest {
     }
 
     // Build 3 test natural key objects to insert.
-    BsTestNatural test1 = new BsTestNatural("a", "b", n1);
-    BsTestNatural test2 = new BsTestNatural("b", "c", n2);
-    BsTestNatural test3 = new BsTestNatural("c", "d", n3);
+    BsTestNatural test1 = new BsTestNatural("a", "b", N1);
+    BsTestNatural test2 = new BsTestNatural("b", "c", N2);
+    BsTestNatural test3 = new BsTestNatural("c", "d", N3);
 
     // Build the list and insert it.
     List<BsTestNatural> list = new ArrayList<BsTestNatural>(3);
     list.add(test1);
     list.add(test2);
     list.add(test3);
-    del.insert(list);
+    DELEGATE.insert(list);
 
     // Update the value of the a-b object to n2.
-    test1.setCol1(n2);
+    test1.setCol1(N2);
     // Update the object.
-    del.update(test1);
+    DELEGATE.update(test1);
     // Requery the object.
-    BsTestNatural test1a = del.getDatabaseObject(key_a_b);
+    BsTestNatural test1a = DELEGATE.getDatabaseObject(KEY1);
     // Test the value with compareTo because of precision issues.
     assertTrue("Couldn't requery object", test1a != null);
     assertTrue("Object value " + test1.getCol1()
-                   + " not the same as updated value " + n2,
-               n2.compareTo(test1.getCol1()) == 0);
+                   + " not the same as updated value " + N2,
+               N2.compareTo(test1.getCol1()) == 0);
   }
 
   /**
@@ -267,21 +268,21 @@ public class TestNaturalDelegateTest extends ConnectionTest {
     }
 
     // Build 3 test natural key objects to insert.
-    BsTestNatural test1 = new BsTestNatural("a", "b", n1);
-    BsTestNatural test2 = new BsTestNatural("b", "c", n2);
-    BsTestNatural test3 = new BsTestNatural("c", "d", n3);
+    BsTestNatural test1 = new BsTestNatural("a", "b", N1);
+    BsTestNatural test2 = new BsTestNatural("b", "c", N2);
+    BsTestNatural test3 = new BsTestNatural("c", "d", N3);
 
     // Build the list and insert it.
     List<BsTestNatural> list = new ArrayList<BsTestNatural>(3);
     list.add(test1);
     list.add(test2);
     list.add(test3);
-    del.insert(list);
+    DELEGATE.insert(list);
 
     // Create an object to insert.
-    BsTestNatural testInsert = new BsTestNatural("z", "z", n1);
+    BsTestNatural testInsert = new BsTestNatural("z", "z", N1);
     // Update the value of the b-c object to n1.
-    test2.setCol1(n1);
+    test2.setCol1(N1);
     // Mark c-d object deleted.
     test3.delete();
 
@@ -291,18 +292,18 @@ public class TestNaturalDelegateTest extends ConnectionTest {
     list.add(test2);
     list.add(test3);
 
-    del.process(list);
+    DELEGATE.process(list);
 
     // Check the results.
-    BsTestNatural test1a = del.getObject(key_z_z);
+    BsTestNatural test1a = DELEGATE.getObject(KEY4);
     assertTrue("Couldn't find inserted z-z object", test1a != null);
-    BsTestNatural test2a = del.getObject(key_b_c);
+    BsTestNatural test2a = DELEGATE.getObject(KEY2);
     assertTrue("Couldn't query updated object", test2a != null);
     assertTrue("Couldn't requery object", test2a != null);
     assertTrue("Object value " + test2a.getCol1()
-                   + " not the same as updated value " + n1,
-               n1.compareTo(test2a.getCol1()) == 0);
-    BsTestNatural test3a = del.getObject(key_a_b);
+                   + " not the same as updated value " + N1,
+               N1.compareTo(test2a.getCol1()) == 0);
+    BsTestNatural test3a = DELEGATE.getObject(KEY3);
     assertTrue("Found deleted object", test3a == null);
   }
 
@@ -334,21 +335,22 @@ public class TestNaturalDelegateTest extends ConnectionTest {
     }
 
     // Build 3 test natural key objects to insert.
-    BsTestNatural test1 = new BsTestNatural("a", "b", n1);
-    BsTestNatural test2 = new BsTestNatural("b", "c", n2);
-    BsTestNatural test3 = new BsTestNatural("c", "d", n3);
+    BsTestNatural test1 = new BsTestNatural("a", "b", N1);
+    BsTestNatural test2 = new BsTestNatural("b", "c", N2);
+    BsTestNatural test3 = new BsTestNatural("c", "d", N3);
 
     // Build the list and insert it.
     List<BsTestNatural> list = new ArrayList<BsTestNatural>(3);
     list.add(test1);
     list.add(test2);
     list.add(test3);
-    del.insert(list);
+    DELEGATE.insert(list);
 
     // Delete the a-b object.
-    del.delete(test1);
+    test1.delete();
+    DELEGATE.delete(test1);
     // Requery the object.
-    BsTestNatural test1a = del.getDatabaseObject(key_a_b);
+    BsTestNatural test1a = DELEGATE.getDatabaseObject(KEY1);
     // Test the value with compareTo because of precision issues.
     assertTrue("Object found in database, not deleted", test1a == null);
   }

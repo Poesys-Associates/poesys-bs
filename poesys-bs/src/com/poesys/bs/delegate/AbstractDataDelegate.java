@@ -23,15 +23,17 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.poesys.bs.dto.AbstractDto;
+import org.apache.log4j.Logger;
+
 import com.poesys.bs.dto.IDto;
+import com.poesys.db.Message;
 import com.poesys.db.NoPrimaryKeyException;
 import com.poesys.db.connection.IConnectionFactory.DBMS;
+import com.poesys.db.dao.PoesysTrackingThread;
 import com.poesys.db.dao.ddl.ExecuteSql;
 import com.poesys.db.dao.ddl.IExecuteSql;
 import com.poesys.db.dao.ddl.ISql;
 import com.poesys.db.dao.ddl.TruncateTableSql;
-import com.poesys.db.dao.delete.IDelete;
 import com.poesys.db.dao.delete.IDeleteBatch;
 import com.poesys.db.dao.delete.IDeleteSql;
 import com.poesys.db.dao.insert.IInsertBatch;
@@ -40,7 +42,6 @@ import com.poesys.db.dao.query.IKeyQuerySql;
 import com.poesys.db.dao.query.IQueryByKey;
 import com.poesys.db.dao.query.IQueryList;
 import com.poesys.db.dao.query.IQuerySql;
-import com.poesys.db.dao.update.IUpdate;
 import com.poesys.db.dao.update.IUpdateBatch;
 import com.poesys.db.dao.update.IUpdateSql;
 import com.poesys.db.dto.IDbDto;
@@ -51,43 +52,29 @@ import com.poesys.db.pk.IPrimaryKey;
 /**
  * <p>
  * An abstract base class that implements the IDataDelegate interface for the
- * JDBC-based business delegates in the application that require a JDBC database
- * connection and managed transactions. The abstract class contains the specific
- * methods for querying, inserting, updating, deleting, and truncating data in a
- * database table and inherit the internal methods for managing connections and
- * transactions from the AbstractConnectionDelegate superclass.
+ * business delegates in the application that require managed transactions in
+ * the database. The abstract class contains the specific methods for querying,
+ * inserting, updating, deleting, and truncating data in a class and its nested
+ * object classes.
  * </p>
  * <p>
- * The implementation implements the abstract methods, most of which create the
- * appropriate SQL objects. The code examples in this documentation show a
- * simple implementation with direct instantiation of classes. You can achieve
- * more sophisticated goals by implementing DAO and/or SQL class factories, then
- * using the factories to implement the abstract methods in this class. This
- * kind of approach, for example, would let you support different SQL statements
- * for different DBMS implementations of the application, with the SQL statement
- * factory generating the appropriate SQL statements based on the identification
- * of the DBMS.
+ * Business delegates should throw only DelegateException exceptions, so place
+ * all code that throws checked exceptions in try-catch blocks that handle the
+ * exceptions or throw a DelegateException with an appropriate message. The
+ * message should be translated if you are using a property from the I18N
+ * properties file by using the Message.getMessage() method.
  * </p>
  * <p>
- * The implementation abstracts the SQL-specification-object instatiations
- * required by the various methods. A concrete subclass simply implements those
- * SQL statement construction methods to create a working delegate.
+ * Each subclass must set the delegateName protected member with the class name
+ * of the delegate for error reporting.
  * </p>
  * <p>
- * <em>
- * Note: You should log exceptions at the top of the calling hierarchy in the
- * user interface layer that uses these business delegates, not in the business
- * delegate itself. The error messages defined in business delegates should be
- * message strings installed in a resource bundle for internationalization. Your
- * business delegate class should throw only a DelegateException that nests the
- * causing exception, if any.
- * </em>
+ * This version of Poesys/DB is a redesign that maintains the insert, update,
+ * and delete methods for backward compatibility but under the covers uses only
+ * the process method, centralizing delegate processing in that method to
+ * improve cohesion and maintainability. It also introduces the insert(object)
+ * and process(object) methods for single-object inserts.
  * </p>
- * 
- * @see DelegateException
- * @see AbstractDto
- * @see com.poesys.db.dto.AbstractDto
- * @see com.poesys.db.pk.IPrimaryKey
  * 
  * @author Robert J. Muller
  * @param <T> the business layer DTO type
@@ -96,10 +83,26 @@ import com.poesys.db.pk.IPrimaryKey;
  */
 abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, K extends IPrimaryKey>
     extends AbstractDaoDelegate<S> implements IDataDelegate<T, S, K> {
+  /** Logger for this class */
+  private static final Logger logger =
+    Logger.getLogger(AbstractDataDelegate.class);
 
-  /** No Object error message tag */
-  private static final String NO_OBJECT_MSG =
-    "com.poesys.bs.delegate.msg.noObject";
+  /**
+   * The list of DTOs to process, must be null at end of using method for
+   * reentrancy
+   */
+  protected List<T> list = null;
+
+  protected final String delegateName;
+
+  /** timeout for the query thread */
+  private static final int TIMEOUT = 1000 * 60;
+
+  /** Error message when thread is interrupted or timed out */
+  private static final String THREAD_ERROR = "com.poesys.db.dao.msg.thread";
+  /** Error message when tracking thread gets exception */
+  private static final String PROCESSING_ERROR =
+    "com.poesys.bs.delegate.msg.processing";
 
   /**
    * Standard constructor that sets the name of the subsystem and the database
@@ -110,10 +113,9 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
    * @param expiration the cache expiration time in milliseconds for objects
    *          this delegate caches in a cache that supports object expiration
    */
-  public AbstractDataDelegate(String subsystem,
-                              DBMS dbms,
-                              Integer expiration) {
+  public AbstractDataDelegate(String subsystem, DBMS dbms, Integer expiration) {
     super(subsystem, dbms, expiration);
+    delegateName = AbstractDataDelegate.class.getName();
   }
 
   /**
@@ -126,6 +128,7 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
    */
   public AbstractDataDelegate(String subsystem, Integer expiration) {
     super(subsystem, expiration);
+    delegateName = AbstractDataDelegate.class.getName();
   }
 
   /**
@@ -283,19 +286,14 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
   @Override
   public void insert(List<T> list) throws DelegateException {
-    IInsertBatch<S> inserter = factory.getInsertBatch(getInsertSql());
+    process(list);
+  }
 
-    Collection<S> dtos = convertDtoList(list);
-
-    try {
-      inserter.insert(dtos, dtos.size() / 2);
-      // INSERT done, update status to EXISTING
-      for (IDbDto dto : dtos) {
-        dto.setExisting();
-      }
-    } finally {
-      finalizeStatus(dtos, Status.EXISTING);
-    }
+  @Override
+  public void insert(T object) throws DelegateException {
+    List<T> list = new ArrayList<T>(1);
+    list.add(object);
+    process(list);
   }
 
   /**
@@ -317,13 +315,9 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
   @Override
   public void update(T object) throws DelegateException {
-    // Create the DAO for updating S objects.
-    IUpdate<S> updater = factory.getUpdate(getUpdateSql());
-
-    // Update the object using the DAO if the object is updatable.
-    if (updater != null) {
-      updater.update(object.toDto());
-    }
+    List<T> list = new ArrayList<T>(1);
+    list.add(object);
+    process(list);
   }
 
   /**
@@ -345,28 +339,14 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
   @Override
   public void updateBatch(List<T> list) throws DelegateException {
-    IUpdateBatch<S> updater = factory.getUpdateBatch(getUpdateSql());
-
-    // Update if the object is updatable.
-    if (updater != null) {
-      Collection<S> dtos = convertDtoList(list);
-
-      updater.update(dtos, dtos.size() / 2);
-    }
+    process(list);
   }
 
   @Override
   public void delete(T object) throws DelegateException {
-    if (object == null) {
-      throw new DelegateException(NO_OBJECT_MSG);
-    }
-
-    IDelete<S> deleter = factory.getDelete(getDeleteSql());
-
-    // Set the object's status to delete.
-    object.delete();
-    // Delete the object with the DAO; object must implement IDbDto interface.
-    deleter.delete(object.toDto());
+    List<T> list = new ArrayList<T>(1);
+    list.add(object);
+    process(list);
   }
 
   /**
@@ -388,14 +368,68 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
   @Override
   public void deleteBatch(List<T> list) throws DelegateException {
-    IDeleteBatch<S> deleter = factory.getDeleteBatch(getDeleteSql());
-    Collection<S> dtos = convertDtoList(list);
-
-    deleter.delete(dtos, dtos.size() / 2);
+    process(list);
   }
 
   @Override
   public void process(List<T> list) throws DelegateException {
+    // Use a tracking thread to maintain a single transaction for all processing
+    // within this method.
+    Runnable query = getRunnable();
+    PoesysTrackingThread thread = new PoesysTrackingThread(query, subsystem);
+    // Set the instance list member to the incoming list to enable processing.
+    this.list = list;
+    thread.start();
+    // Join the thread, blocking until the thread completes or
+    // until the query times out.
+    try {
+      thread.join(TIMEOUT);
+    } catch (InterruptedException e) {
+      // Log and ignore this exception.
+      Object[] args = { "process", delegateName };
+      String message = Message.getMessage(THREAD_ERROR, args);
+      logger.error(message, e);
+    }
+
+    // Set the instance list member to null to make this method reentrant.
+    list = null;
+  }
+
+  /**
+   * Get a Runnable object for the tracking thread to run.
+   * 
+   * @return the Runnable object
+   */
+  private Runnable getRunnable() {
+    Runnable runnable = new Runnable() {
+      public void run() {
+        // Get the tracking thread.
+        PoesysTrackingThread thread =
+          (PoesysTrackingThread)Thread.currentThread();
+        try {
+          doProcessing(thread);
+        } catch (Exception e) {
+          Object[] args = { delegateName };
+          String message = Message.getMessage(PROCESSING_ERROR, args);
+          logger.error(message, e);
+          throw new DelegateException(message, e);
+        } finally {
+          if (thread != null) {
+            thread.closeConnection();
+          }
+        }
+      }
+    };
+    return runnable;
+  }
+
+  /**
+   * Process the list of DTOs using the appropriate DAOs. Throws a
+   * DelegateException with any batch-processing errors.
+   * 
+   * @param thread the Poesys tracking thread for the transaction
+   */
+  private void doProcessing(PoesysTrackingThread thread) {
     // Create the 3 DAOs for inserting, updating, and deleting.
     IInsertBatch<S> inserter = factory.getInsertBatch(getInsertSql());
     IUpdateBatch<S> updater = factory.getUpdateBatch(getUpdateSql());
@@ -403,12 +437,22 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
     Collection<S> dtos = convertDtoList(list);
 
+    // Add the EXISTING DTOs to the tracking thread. The DAOs never process
+    // EXISTING DTOs.
+    for (IDbDto dto : dtos) {
+      if (dto.getStatus() == Status.EXISTING
+          && thread.getDto(dto.getPrimaryKey()) == null) {
+        // Not in thread yet, add it to track the DTO.
+        thread.addDto(dto);
+      }
+    }
+
     try {
-      // Delete, insert, and update the objects. Each DAO will process only
-      // those objects that have the appropriate status for the operation.
+      // Each DAO processes the top-level DTO according to its status.
       if (deleter != null) {
         deleter.delete(dtos, dtos.size() / 2);
       }
+
       // Inserter always exists.
       inserter.insert(dtos, dtos.size() / 2);
       // INSERT done, set NEW to EXISTING
@@ -417,14 +461,53 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
           dto.setExisting();
         }
       }
+
       if (updater != null) {
         updater.update(dtos, dtos.size() / 2);
       }
+
+      postprocess(dtos, thread);
     } finally {
       // Finalize inserts and deletes.
       finalizeStatus(dtos, Status.EXISTING);
       finalizeStatus(dtos, Status.DELETED);
+      // If there are any batch errors, throw an exception.
+      List<String> errors = thread.getBatchErrors();
+      if (errors.size() > 0) {
+        StringBuilder builder =
+          new StringBuilder("Batch processing failed for these DTOs: ");
+        String sep = "";
+        for (String errorKey : errors) {
+          builder.append(sep);
+          builder.append(errorKey);
+          sep = ", ";
+        }
+        throw new DelegateException(builder.toString());
+      }
     }
+  }
+
+  /**
+   * Post-process the DTOs by processing the nested objects within each DTO,
+   * inserting/updating/deleting them as required by their status. Mark each DTO
+   * as fully processed when the post-processing is complete to prevent further
+   * post-processing through subsequence DTOs. All processing happens within the
+   * existing tracking thread and hence within a single transaction.
+   * 
+   * @param dtos the list of DTOs to process
+   * @param thread the tracking thread
+   */
+  protected void postprocess(Collection<S> dtos, PoesysTrackingThread thread) {
+    for (S dto : dtos) {
+      dto.postprocessNestedObjects();
+    }
+  }
+
+  @Override
+  public void process(T object) throws DelegateException {
+    List<T> list = new ArrayList<T>(1);
+    list.add(object);
+    process(list);
   }
 
   /**

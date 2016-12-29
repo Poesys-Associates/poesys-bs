@@ -55,69 +55,36 @@ public class TestNaturalDelegate extends
     super("com.poesys.db.poesystest.mysql", DBMS.MYSQL, 100*1000);
   }
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see com.poesys.bs.delegate.AbstractDataDelegate#getDeleteSql()
-   */
   @Override
   protected IDeleteSql<TestNatural> getDeleteSql() {
     return new DeleteSqlTestNatural();
   }
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see com.poesys.bs.delegate.AbstractDataDelegate#getInsertSql()
-   */
   @Override
   protected IInsertSql<TestNatural> getInsertSql() {
     return new InsertSqlTestNatural();
   }
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see com.poesys.bs.delegate.AbstractDataDelegate#getQueryByKeySql()
-   */
   @Override
   protected IKeyQuerySql<TestNatural> getQueryByKeySql() {
     return new TestNaturalKeyQuerySql();
   }
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see com.poesys.bs.delegate.AbstractDataDelegate#getQueryListSql()
-   */
   @Override
   protected IQuerySql<TestNatural> getQueryListSql() {
     return new TestNaturalAllQuerySql();
   }
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see com.poesys.bs.delegate.AbstractDataDelegate#getUpdateSql()
-   */
   @Override
   protected IUpdateSql<TestNatural> getUpdateSql() {
     return new UpdateSqlTestNatural();
   }
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see com.poesys.bs.delegate.AbstractDataDelegate#wrapData(com.poesys.db.dto.AbstractDto)
-   */
   @Override
   protected BsTestNatural wrapData(TestNatural dto) {
     return new BsTestNatural(dto);
   }
 
-  /* (non-Javadoc)
-   * @see com.poesys.bs.delegate.AbstractDataDelegate#getClassName()
-   */
   @Override
   protected String getClassName() {
     return TestNatural.class.getName();

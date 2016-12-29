@@ -76,8 +76,8 @@ public interface IDataDelegate<T extends IDto<S>, S extends com.poesys.db.dto.ID
   T getObject(K key, int expiration) throws DelegateException;
 
   /**
-   * Query an object of type T based on its primary key values directly from
-   * the database, replacing any cached version of the object.
+   * Query an object of type T based on its primary key values directly from the
+   * database, replacing any cached version of the object.
    * 
    * @param key the primary key of the object to query
    * @return an object of type T or null if no object matches the key
@@ -116,15 +116,15 @@ public interface IDataDelegate<T extends IDto<S>, S extends com.poesys.db.dto.ID
   List<T> getAllObjects(int rows) throws DelegateException;
 
   /**
-   * Get a list of all the TestNatural objects in the database, setting the
-   * expiration time to a specified value when caching the objects.
+   * Get a list of all the T objects in the database, setting the expiration
+   * time to a specified value when caching the objects.
    * 
    * @param rows the number of rows to fetch at once, optimizes large queries; 0
    *          means the default
    * @param expiration the time in milliseconds until the queried objects expire
    *          in the cache
    * 
-   * @return a list of TestNatural objects
+   * @return a list of T objects
    * @throws DelegateException when there is a constraint violation, a problem
    *           with executing the query, a problem with nested-object queries,
    *           or a problem assigning initial DTO status
@@ -132,31 +132,39 @@ public interface IDataDelegate<T extends IDto<S>, S extends com.poesys.db.dto.ID
   List<T> getAllObjects(int rows, int expiration) throws DelegateException;
 
   /**
-   * Insert a list of TestNatural objects into the database.
+   * Insert a list of objects of type T into the database.
    * 
-   * @param list the list of TestNatural objects
+   * @param list the list of T objects
    * @throws DelegateException when there is a problem inserting the objects
    */
   void insert(List<T> list) throws DelegateException;
 
   /**
-   * Update an object of type T in the database.
+   * Insert an object of type T.
    * 
-   * @param object the object to update with the values with which to update
-   * @throws DelegateException if there is a problem updating
+   * @param object the object of type T
+   * @throws DelegateException when there is a problem inserting the objects
+   */
+  void insert(T object) throws DelegateException;
+
+  /**
+   * Update an object of type T, updating all changeable values.
+   * 
+   * @param object the object of type T to update
+   * @throws DelegateException if there is a problem updating the object
    */
   void update(T object) throws DelegateException;
 
   /**
-   * Insert a list of TestNatural objects into the database.
+   * Update a list of objects of type T, updating all changeable values.
    * 
-   * @param list the list of TestNatural objects
-   * @throws DelegateException when there is a problem inserting the objects
+   * @param list the list of objects of type T
+   * @throws DelegateException when there is a problem updating the objects
    */
   void updateBatch(List<T> list) throws DelegateException;
 
   /**
-   * Delete an object of type T in the database.
+   * Delete an object of type T.
    * 
    * @param object the object to delete
    * @throws DelegateException when there is a problem deleting the object
@@ -164,31 +172,41 @@ public interface IDataDelegate<T extends IDto<S>, S extends com.poesys.db.dto.ID
   void delete(T object) throws DelegateException;
 
   /**
-   * Insert a list of TestNatural objects into the database.
+   * Delete a list of objects of type T.
    * 
-   * @param list the list of TestNatural objects
-   * @throws DelegateException when there is a problem inserting the objects
+   * @param list the list of T objects
+   * @throws DelegateException when there is a problem deleting the objects
    */
   void deleteBatch(List<T> list) throws DelegateException;
 
   /**
-   * Process a list of TestNatural objects in various statuses. The method will
-   * insert, update, or delete objects in the list based on each object's
-   * status.
+   * Process a list of objects of type T in various statuses. The method
+   * inserts, updates, or deletes objects in the list based on each object's
+   * status, then processes all nested objects.
    * 
-   * @param list the list of TestNatural objects
+   * @param list the list of T objects
    * @throws DelegateException when there is a problem processing the objects
    */
   void process(List<T> list) throws DelegateException;
 
   /**
+   * Process an object of type T in various statuses. The method inserts,
+   * updates, or deletes the object based on the status of the object, then
+   * processes all nested objects.
+   * 
+   * @param object the object of type T
+   * @throws DelegateException when there is a problem processing the objects
+   */
+  void process(T object) throws DelegateException;
+
+  /**
    * Truncate a table, removing all rows. This is a Data Definition Language
-   * statement that will commit any open transaction.
+   * statement that will commit any open transaction. Note that you must have
+   * privileges to truncate the table in the underlying DBMS.
    * 
    * @param tableName the name of the table to truncate
    * @throws DelegateException when there is a SQL exception on the attempt to
    *           truncate the table
    */
   void truncateTable(String tableName) throws DelegateException;
-
 }
