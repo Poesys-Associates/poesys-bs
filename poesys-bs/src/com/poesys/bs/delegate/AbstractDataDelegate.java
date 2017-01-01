@@ -96,7 +96,13 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
   protected final String delegateName;
 
   /** timeout for the query thread */
-  private static final int TIMEOUT = 1000 * 60;
+  private static final int TIMEOUT = 10000 * 60;
+  
+  static {
+    List<String> names = new ArrayList<String>(1);
+    names.add("com.poesys.bs.PoesysBsBundle");
+    Message.initializePropertiesFiles(names);
+  }
 
   /** Error message when thread is interrupted or timed out */
   private static final String THREAD_ERROR = "com.poesys.db.dao.msg.thread";
