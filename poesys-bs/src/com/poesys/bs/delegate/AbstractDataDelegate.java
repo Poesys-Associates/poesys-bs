@@ -97,7 +97,7 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
 
   /** timeout for the query thread */
   private static final int TIMEOUT = 10000 * 60;
-  
+
   static {
     List<String> names = new ArrayList<String>(1);
     names.add("com.poesys.bs.PoesysBsBundle");
@@ -390,9 +390,16 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
     // until the query times out.
     try {
       thread.join(TIMEOUT);
+      if (thread.getThrowable() != null) {
+        Object[] args =
+          { delegateName + " for list of DTOs beginning with "
+            + list.get(0).getPrimaryKey().getStringKey() };
+        String message = Message.getMessage(PROCESSING_ERROR, args);
+        throw new DelegateException(message, thread.getThrowable());
+      }
     } catch (InterruptedException e) {
       // Log and ignore this exception.
-      Object[] args = { "process", delegateName };
+      Object[] args = { "process list", delegateName };
       String message = Message.getMessage(THREAD_ERROR, args);
       logger.error(message, e);
     }
@@ -414,11 +421,8 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
           (PoesysTrackingThread)Thread.currentThread();
         try {
           doProcessing(thread);
-        } catch (Exception e) {
-          Object[] args = { delegateName };
-          String message = Message.getMessage(PROCESSING_ERROR, args);
-          logger.error(message, e);
-          throw new DelegateException(message, e);
+        } catch (Throwable e) {
+          thread.setThrowable(e);
         } finally {
           if (thread != null) {
             thread.closeConnection();
@@ -488,7 +492,8 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
           builder.append(errorKey);
           sep = ", ";
         }
-        throw new DelegateException(builder.toString());
+        // Note: if there is an exception, this method throws it to the caller,
+        // which should wrap it in a DelegateException.
       }
     }
   }
