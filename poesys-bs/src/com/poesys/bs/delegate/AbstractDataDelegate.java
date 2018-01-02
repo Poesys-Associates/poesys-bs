@@ -391,9 +391,21 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
     try {
       thread.join(TIMEOUT);
       if (thread.getThrowable() != null) {
-        Object[] args =
-          { delegateName + " for list of DTOs beginning with "
-            + list.get(0).getPrimaryKey().getStringKey() };
+        // If there are any batch errors, throw an exception.
+        List<String> errors = thread.getBatchErrors();
+        StringBuilder builder = new StringBuilder();
+        if (errors.size() > 0) {
+          builder.append("Batch processing failed for these DTOs: ");
+          String sep = "";
+          for (String errorKey : errors) {
+            builder.append(sep);
+            builder.append(errorKey);
+            sep = ", ";
+          }
+          // Note: if there is an exception, this method throws it to the caller,
+          // which should wrap it in a DelegateException.
+        }
+        Object[] args = { builder.toString() };
         String message = Message.getMessage(PROCESSING_ERROR, args);
         throw new DelegateException(message, thread.getThrowable());
       }
@@ -481,20 +493,6 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
       // Finalize inserts and deletes.
       finalizeStatus(dtos, Status.EXISTING);
       finalizeStatus(dtos, Status.DELETED);
-      // If there are any batch errors, throw an exception.
-      List<String> errors = thread.getBatchErrors();
-      if (errors.size() > 0) {
-        StringBuilder builder =
-          new StringBuilder("Batch processing failed for these DTOs: ");
-        String sep = "";
-        for (String errorKey : errors) {
-          builder.append(sep);
-          builder.append(errorKey);
-          sep = ", ";
-        }
-        // Note: if there is an exception, this method throws it to the caller,
-        // which should wrap it in a DelegateException.
-      }
     }
   }
 
