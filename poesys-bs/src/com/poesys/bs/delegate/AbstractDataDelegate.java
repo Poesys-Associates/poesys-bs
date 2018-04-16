@@ -125,6 +125,21 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
   }
 
   /**
+   * Standard constructor that sets the name of the subsystem and the database
+   * type for construction of connections to the database.
+   *
+   * @param className the name of the concrete subclass to instantiate
+   * @param subsystem the name of the subsystem
+   * @param dbms the kind of database that implements the subsystem
+   * @param expiration the cache expiration time in milliseconds for objects
+   *          this delegate caches in a cache that supports object expiration
+   */
+  public AbstractDataDelegate(String className, String subsystem, DBMS dbms, Integer expiration) {
+    super(subsystem, dbms, expiration);
+    delegateName = className;
+  }
+
+  /**
    * Standard JNDI connection constructor that sets up connections by getting
    * the JNDI data source through the subsystem name.
    * 

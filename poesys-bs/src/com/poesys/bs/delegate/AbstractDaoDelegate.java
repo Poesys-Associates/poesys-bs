@@ -52,7 +52,7 @@ public abstract class AbstractDaoDelegate<S extends IDbDto> {
    * Create a DAO Delegate. This is a standard constructor that sets the name of
    * the subsystem and the database type for construction of connections to the
    * database.
-   * 
+   *
    * @param subsystem the name of the subsystem
    * @param dbms the kind of database that implements the subsystem
    * @param expiration the cache expiration time in milliseconds for objects
@@ -64,6 +64,25 @@ public abstract class AbstractDaoDelegate<S extends IDbDto> {
     this.dbms = dbms;
     manager = DaoManagerFactory.getManager(subsystem);
     factory = manager.getFactory(getClassName(), subsystem, expiration);
+  }
+
+  /**
+   * Create a DAO Delegate. This is a standard constructor that sets the name of
+   * the subsystem and the database type for construction of connections to the
+   * database.
+   *
+   * @param className the name of the concrete subclass to instantiate
+   * @param subsystem the name of the subsystem
+   * @param dbms the kind of database that implements the subsystem
+   * @param expiration the cache expiration time in milliseconds for objects
+   *          this delegate caches in a cache that supports object expiration
+   */
+  public AbstractDaoDelegate(String className, String subsystem, DBMS dbms, Integer expiration) {
+    // Create the DAO factory with the object's class name.
+    this.subsystem = subsystem;
+    this.dbms = dbms;
+    manager = DaoManagerFactory.getManager(subsystem);
+    factory = manager.getFactory(className, subsystem, expiration);
   }
 
   /**
