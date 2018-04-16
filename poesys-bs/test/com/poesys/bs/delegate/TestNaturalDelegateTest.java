@@ -17,6 +17,16 @@
  */
 package com.poesys.bs.delegate;
 
+import com.poesys.bs.dto.BsTestNatural;
+import com.poesys.bs.dto.IDto;
+import com.poesys.db.col.IColumnValue;
+import com.poesys.db.col.StringColumnValue;
+import com.poesys.db.dao.ConnectionTest;
+import com.poesys.db.pk.IPrimaryKey;
+import com.poesys.db.pk.NaturalPrimaryKey;
+import org.apache.log4j.Logger;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -24,17 +34,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.poesys.bs.dto.IDto;
-import com.poesys.db.pk.IPrimaryKey;
-import org.apache.log4j.Logger;
-import org.junit.Test;
-
-import com.poesys.bs.dto.BsTestNatural;
-import com.poesys.db.col.AbstractColumnValue;
-import com.poesys.db.col.StringColumnValue;
-import com.poesys.db.dao.ConnectionTest;
-import com.poesys.db.pk.NaturalPrimaryKey;
 
 import static junit.framework.TestCase.assertTrue;
 
@@ -64,7 +63,7 @@ public class TestNaturalDelegateTest extends ConnectionTest {
    * @return the key
    */
   private static NaturalPrimaryKey createKey(String key1, String key2) {
-    List<AbstractColumnValue> keyList = new ArrayList<>(2);
+    List<IColumnValue> keyList = new ArrayList<>(2);
     keyList.add(new StringColumnValue("key1", key1));
     keyList.add(new StringColumnValue("key2", key2));
     return new NaturalPrimaryKey(keyList, "com.poesys.db.dto.TestNatural");
