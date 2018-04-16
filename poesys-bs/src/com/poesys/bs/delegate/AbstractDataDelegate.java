@@ -135,7 +135,7 @@ abstract public class AbstractDataDelegate<T extends IDto<S>, S extends IDbDto, 
    *          this delegate caches in a cache that supports object expiration
    */
   public AbstractDataDelegate(String className, String subsystem, DBMS dbms, Integer expiration) {
-    super(subsystem, dbms, expiration);
+    super(className, subsystem, dbms, expiration);
     delegateName = className;
   }
 
